@@ -16,6 +16,7 @@
 
 from .Sha256Chain import Sha256Chain
 
+
 class LegacyNoBit8(Sha256Chain):
     """
     Same as Sha256Chain, for backwards compatibility.

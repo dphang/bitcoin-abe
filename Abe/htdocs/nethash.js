@@ -16,7 +16,7 @@
 
 "use strict";
 
-var Abe = (function() {
+var Abe = (function () {
 
     var SVG_NS = "http://www.w3.org/2000/svg";
     var ABE_NS = "http://abe.bit/abe";
@@ -30,10 +30,10 @@ var Abe = (function() {
         var hi = -Infinity, lo = Infinity;
 
         if (grain === undefined) {
-            grain = 6*60*60;   // 6 hours
-            grain = 60*60;   // 1 hour
-	    grain = 1;
-            grain = 24*60*60;   // 1 day
+            grain = 6 * 60 * 60;   // 6 hours
+            grain = 60 * 60;   // 1 hour
+            grain = 1;
+            grain = 24 * 60 * 60;   // 1 day
         }
 
         elts = svg.getElementsByTagNameNS(ABE_NS, "*");
@@ -44,7 +44,7 @@ var Abe = (function() {
             elts = [];
             Array.prototype.forEach.call(
                 svg.getElementsByTagName("*"),
-                function(elt) {
+                function (elt) {
                     if (elt.localName.indexOf("abe:") === 0)
                         elts.push(elt);
                 });
@@ -55,9 +55,9 @@ var Abe = (function() {
         for (i = 0; i < elts.length; i++) {
             node = elts[i];
             switch (node.localName.replace("abe:", "")) {
-            case "nethash":
-                rows.push(nodeToRow(node));
-                break;
+                case "nethash":
+                    rows.push(nodeToRow(node));
+                    break;
             }
         }
 
@@ -86,11 +86,20 @@ var Abe = (function() {
                 n = Number(m[1]);
                 if (n > 0) {
                     switch (m[2].toLowerCase()) {
-                    case "d": case "day": case "days": return n * 24*60*60;
-                    case "h": case "hour": case "hours": return n * 60*60;
-                    case "m": return n * 60;
-                    case "s": return n;
-                    default: break;
+                        case "d":
+                        case "day":
+                        case "days":
+                            return n * 24 * 60 * 60;
+                        case "h":
+                        case "hour":
+                        case "hours":
+                            return n * 60 * 60;
+                        case "m":
+                            return n * 60;
+                        case "s":
+                            return n;
+                        default:
+                            break;
                     }
                 }
             }
@@ -103,7 +112,7 @@ var Abe = (function() {
         }
 
         function make_line(elt) {
-            var line = { elt: elt }, window;
+            var line = {elt: elt}, window;
 
             window = elt.getAttributeNS(ABE_NS, "window");
 
@@ -117,7 +126,7 @@ var Abe = (function() {
 
                 if (line.block_time <= 0) {
                     throw "Invalid block_time for difficulty line: " +
-                        line.block_time;
+                    line.block_time;
                 }
 
                 difficulty_rate = rows[0].difficulty / line.block_time;
@@ -129,7 +138,7 @@ var Abe = (function() {
 
         chart = svg.getElementById("chart");
         lines = Array.prototype.map.call(chart.getElementsByTagName("polyline"),
-                                         make_line)
+            make_line)
         first = difficulty_rate;
 
         if (first === undefined) {
@@ -152,11 +161,14 @@ var Abe = (function() {
             line.rate = first;
             line.elt.points.initialize(make_point(0, scale_rate(line.rate)));
         }
+
         lines.forEach(init_line);
 
-        rows.sort(function(a, b) { return a.nTime - b.nTime; });
-        intervals = Math.ceil((rows[rows.length-1].nTime - rows[0].nTime) /
-                              grain);
+        rows.sort(function (a, b) {
+            return a.nTime - b.nTime;
+        });
+        intervals = Math.ceil((rows[rows.length - 1].nTime - rows[0].nTime) /
+            grain);
         // XXX Should use the chart element's dimensions, not <svg>.
         width = svg.viewBox.baseVal.width;
         height = svg.viewBox.baseVal.height;
@@ -168,169 +180,169 @@ var Abe = (function() {
 
             elapsed += seconds;
 
-	    var count = Math.floor(elapsed / grain);
+            var count = Math.floor(elapsed / grain);
 
-	    function extend_line(line) {
-		var old_rate;
+            function extend_line(line) {
+                var old_rate;
 
-		if (line.block_time) {
-		    old_rate = line.rate;
-		    line.rate = rows[i].difficulty / line.block_time;
+                if (line.block_time) {
+                    old_rate = line.rate;
+                    line.rate = rows[i].difficulty / line.block_time;
 
-		    if (line.rate === old_rate) {
-			return;
-		    }
-		}
-		else {
-		    line.rate *= Math.pow(line.oldShare, count);
-		    if (worked === 0) {
-			return;
-		    }
-		    old_rate = sawtooth ? line.rate : 0;
-		    line.rate += line.newShare * worked / grain;
-		}
-		if (old_rate > 0) {
-		    line.elt.points.appendItem(
+                    if (line.rate === old_rate) {
+                        return;
+                    }
+                }
+                else {
+                    line.rate *= Math.pow(line.oldShare, count);
+                    if (worked === 0) {
+                        return;
+                    }
+                    old_rate = sawtooth ? line.rate : 0;
+                    line.rate += line.newShare * worked / grain;
+                }
+                if (old_rate > 0) {
+                    line.elt.points.appendItem(
                         make_point(drawn * width / intervals,
-				   scale_rate(old_rate)));
-		}
-		if (line.rate > 0) {
-		    line.elt.points.appendItem(
+                            scale_rate(old_rate)));
+                }
+                if (line.rate > 0) {
+                    line.elt.points.appendItem(
                         make_point(drawn * width / intervals,
-				   scale_rate(line.rate)));
-		}
-	    }
+                            scale_rate(line.rate)));
+                }
+            }
 
-	    if (count > 0) {
-		drawn += count;
-		lines.forEach(extend_line);
-		elapsed -= count * grain;
-		worked = 0;
-	    }
+            if (count > 0) {
+                drawn += count;
+                lines.forEach(extend_line);
+                elapsed -= count * grain;
+                worked = 0;
+            }
 
             worked += work;
         }
 
-	i = 1;
-	time_end = Date.now();
+        i = 1;
+        time_end = Date.now();
 
-	function draw_some() {
-	    var now = Date.now();
-	    time_end = now + Math.max(100, 0.5 * (now - time_end));
+        function draw_some() {
+            var now = Date.now();
+            time_end = now + Math.max(100, 0.5 * (now - time_end));
 
-	    for (; i < rows.length; i++) {
-		tick(rows[i].nTime - rows[i-1].nTime, rows[i].work);
+            for (; i < rows.length; i++) {
+                tick(rows[i].nTime - rows[i - 1].nTime, rows[i].work);
 
-		if (Date.now() >= time_end) {
-		    break;
-		}
-	    }
+                if (Date.now() >= time_end) {
+                    break;
+                }
+            }
 
-	    matrix = svg.createSVGMatrix();
+            matrix = svg.createSVGMatrix();
 
-	    if (lo !== hi) {
-		matrix.d = height / 1.1 / (lo - hi);
-		matrix.f = height / 1.05 - lo * matrix.d;
-		//matrix.f = 1 + lo / (hi - lo);
-	    }
+            if (lo !== hi) {
+                matrix.d = height / 1.1 / (lo - hi);
+                matrix.f = height / 1.05 - lo * matrix.d;
+                //matrix.f = 1 + lo / (hi - lo);
+            }
 
-	    chart_transform =
-		chart.transform.baseVal.createSVGTransformFromMatrix(matrix);
+            chart_transform =
+                chart.transform.baseVal.createSVGTransformFromMatrix(matrix);
 
-	    chart.transform.baseVal.initialize(chart_transform);
+            chart.transform.baseVal.initialize(chart_transform);
 
-	    if (i < rows.length) {
-		window.setTimeout(draw_some);
-		return;
-	    }
+            if (i < rows.length) {
+                window.setTimeout(draw_some);
+                return;
+            }
 
-	    add_mouse();
-	}
+            add_mouse();
+        }
 
-	function getEventPoint(event) {
+        function getEventPoint(event) {
             return [event.clientX, event.clientY];
-	}
+        }
 
-	var drag;
+        var drag;
 
-	function handle_mousedown(event) {
-	    drag = getEventPoint(event);
+        function handle_mousedown(event) {
+            drag = getEventPoint(event);
 
-	    // Prevent a containing HTML document from letting us drag
-	    // the SVG "image".
-	    event.preventDefault();
-	}
+            // Prevent a containing HTML document from letting us drag
+            // the SVG "image".
+            event.preventDefault();
+        }
 
-	function handle_mousemove(event) {
-	    var p, x, y, m;
+        function handle_mousemove(event) {
+            var p, x, y, m;
 
-	    if (drag) {
-		p = getEventPoint(event);
-		x = p[0] - drag[0], y = p[1] - drag[1];
+            if (drag) {
+                p = getEventPoint(event);
+                x = p[0] - drag[0], y = p[1] - drag[1];
 
-		if (x !== 0 || y !== 0) {
-	            m = event.target.getScreenCTM().inverse();
+                if (x !== 0 || y !== 0) {
+                    m = event.target.getScreenCTM().inverse();
                     x *= m.a;
                     y *= m.d;
 
-		    m = chart_transform.matrix;
+                    m = chart_transform.matrix;
                     //console.log(["move:", x, y, m.a, m.b, m.c, m.d, m.e, m.f]);
-		    m.e += x;
-		    m.f += y;
-		    drag = p;
-		}
-		event.preventDefault();
-	    }
-	}
+                    m.e += x;
+                    m.f += y;
+                    drag = p;
+                }
+                event.preventDefault();
+            }
+        }
 
-	function handle_mouseup(event) {
-	    handle_mousemove(event);
-	    drag = undefined;
-	}
+        function handle_mouseup(event) {
+            handle_mousemove(event);
+            drag = undefined;
+        }
 
-	function handle_wheel(event) {
-	    var p = getEventPoint(event), x = p[0], y = p[1];
-	    var d = Math.exp(-0.05 * event.deltaY);
-	    var m;
+        function handle_wheel(event) {
+            var p = getEventPoint(event), x = p[0], y = p[1];
+            var d = Math.exp(-0.05 * event.deltaY);
+            var m;
 
-	    m = event.target.getScreenCTM().inverse();
-	    p = [m.a*x + m.c*y + m.e, m.b*x + m.d*y + m.f];
+            m = event.target.getScreenCTM().inverse();
+            p = [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f];
             x = p[0];
             y = p[1];
 
             m = chart_transform.matrix;
-	    m.e -= x * m.a * (d - 1);
-	    m.f -= y * m.d * (d - 1);
-	    m.a *= d;
-	    m.d *= d;
+            m.e -= x * m.a * (d - 1);
+            m.f -= y * m.d * (d - 1);
+            m.a *= d;
+            m.d *= d;
 
-	    event.preventDefault();
-	}
+            event.preventDefault();
+        }
 
-	function handle_nonstandard_mousewheel(event) {
-	    event.deltaY = event.detail || -0.025 * event.wheelDelta;
-	    handle_wheel(event);
-	}
+        function handle_nonstandard_mousewheel(event) {
+            event.deltaY = event.detail || -0.025 * event.wheelDelta;
+            handle_wheel(event);
+        }
 
-	function add_mouse() {
-	    svg.addEventListener('mousedown', handle_mousedown, true);
-	    svg.addEventListener('mouseup', handle_mouseup, true);
-	    svg.addEventListener('mousemove', handle_mousemove, true);
-	    //svg.addEventListener('wheel', handle_wheel, true);
-	    svg.addEventListener('mousewheel', handle_nonstandard_mousewheel, true);
-	    svg.addEventListener('DOMMouseScroll', handle_nonstandard_mousewheel, true);
-	}
+        function add_mouse() {
+            svg.addEventListener('mousedown', handle_mousedown, true);
+            svg.addEventListener('mouseup', handle_mouseup, true);
+            svg.addEventListener('mousemove', handle_mousemove, true);
+            //svg.addEventListener('wheel', handle_wheel, true);
+            svg.addEventListener('mousewheel', handle_nonstandard_mousewheel, true);
+            svg.addEventListener('DOMMouseScroll', handle_nonstandard_mousewheel, true);
+        }
 
-	draw_some();
+        draw_some();
     }
 
     function nodeToRow(node) {
         return {
-            nTime:      Number(node.getAttributeNS(null, "t")),
+            nTime: Number(node.getAttributeNS(null, "t")),
             difficulty: Number(node.getAttributeNS(null, "d")),
-            work:       Number(node.getAttributeNS(null, "w"))
+            work: Number(node.getAttributeNS(null, "w"))
         };
     }
 
-    return { draw: draw };
+    return {draw: draw};
 })();

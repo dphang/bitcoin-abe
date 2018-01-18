@@ -14,8 +14,9 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-from .X11Chain import X11Chain
 from .PpcPosChain import PpcPosChain
+from .X11Chain import X11Chain
+
 
 class X11PosChain(X11Chain, PpcPosChain):
     pass

@@ -17,6 +17,7 @@
 from .. import deserialize, BCDataStream, util
 from ..deserialize import opcodes
 
+
 def create(policy, **kwargs):
     mod = __import__(__name__ + '.' + policy, fromlist=[policy])
     cls = getattr(mod, policy)
@@ -29,16 +30,16 @@ MAX_MULTISIG_KEYS = 3
 # Template to match a pubkey hash ("Bitcoin address transaction") in
 # txout_scriptPubKey.  OP_PUSHDATA4 matches any data push.
 SCRIPT_ADDRESS_TEMPLATE = [
-    opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG ]
+    opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
 
 # Template to match a pubkey ("IP address transaction") in txout_scriptPubKey.
-SCRIPT_PUBKEY_TEMPLATE = [ opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG ]
+SCRIPT_PUBKEY_TEMPLATE = [opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG]
 
 # Template to match a BIP16 pay-to-script-hash (P2SH) output script.
-SCRIPT_P2SH_TEMPLATE = [ opcodes.OP_HASH160, PUBKEY_HASH_LENGTH, opcodes.OP_EQUAL ]
+SCRIPT_P2SH_TEMPLATE = [opcodes.OP_HASH160, PUBKEY_HASH_LENGTH, opcodes.OP_EQUAL]
 
 # Template to match a script that can never be redeemed, used in Namecoin.
-SCRIPT_BURN_TEMPLATE = [ opcodes.OP_RETURN ]
+SCRIPT_BURN_TEMPLATE = [opcodes.OP_RETURN]
 
 SCRIPT_TYPE_INVALID = 0
 SCRIPT_TYPE_UNKNOWN = 1
@@ -133,7 +134,7 @@ class BaseChain(object):
 
     def ds_block_header_hash(chain, ds):
         return chain.block_header_hash(
-            ds.input[ds.read_cursor : ds.read_cursor + 80])
+            ds.input[ds.read_cursor: ds.read_cursor + 80])
 
     def transaction_hash(chain, binary_tx):
         return util.double_sha256(binary_tx)
@@ -180,7 +181,7 @@ class BaseChain(object):
         if script is None:
             raise ValueError()
         try:
-            decoded = [ x for x in deserialize.script_GetOp(script) ]
+            decoded = [x for x in deserialize.script_GetOp(script)]
         except Exception:
             return SCRIPT_TYPE_INVALID, script
         return chain.parse_decoded_txout_script(decoded)
@@ -208,9 +209,9 @@ class BaseChain(object):
             n = decoded[-2][0] + 1 - opcodes.OP_1
             m = decoded[0][0] + 1 - opcodes.OP_1
             if 1 <= m <= n <= MAX_MULTISIG_KEYS and len(decoded) == 3 + n and \
-                    all([ decoded[i][0] <= opcodes.OP_PUSHDATA4 for i in range(1, 1+n) ]):
+                    all([decoded[i][0] <= opcodes.OP_PUSHDATA4 for i in range(1, 1 + n)]):
                 return SCRIPT_TYPE_MULTISIG, \
-                    { "m": m, "pubkeys": [ decoded[i][1] for i in range(1, 1+n) ] }
+                       {"m": m, "pubkeys": [decoded[i][1] for i in range(1, 1 + n)]}
 
         # Namecoin overrides this to accept name operations.
         return SCRIPT_TYPE_UNKNOWN, decoded

@@ -14,8 +14,9 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-from .ScryptJaneChain import ScryptJaneChain
 from .PpcPosChain import PpcPosChain
+from .ScryptJaneChain import ScryptJaneChain
+
 
 class Bitleu(ScryptJaneChain, PpcPosChain):
     def __init__(chain, **kwargs):

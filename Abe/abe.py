@@ -15,27 +15,23 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-import sys
-import os
-import optparse
-import re
-from cgi import escape
-import posixpath
-import wsgiref.util
-import time
 import calendar
-import math
-import logging
 import json
+import logging
+import os
+import posixpath
+import re
+import sys
+import time
+import wsgiref.util
+from cgi import escape
 
-from . import version
 from . import DataStore
-from . import readconf
-
-# bitcointools -- modified deserialize.py to return raw transaction
-from . import deserialize
-from . import util  # Added functions.
 from . import base58
+from . import deserialize
+from . import readconf
+from . import util  # Added functions.
+from . import version
 
 __version__ = version.__version__
 
@@ -50,7 +46,7 @@ COPYRIGHT_URL = 'https://github.com/bitcoin-abe'
 DONATIONS_BTC = '1PWC7PNHL1SgvZaN7xEtygenKjWobWsCuf'
 DONATIONS_NMC = 'NJ3MSELK1cWnqUa6xhF2wUYAnz3RSrWXcK'
 
-TIME1970 = time.strptime('1970-01-01','%Y-%m-%d')
+TIME1970 = time.strptime('1970-01-01', '%Y-%m-%d')
 EPOCH1970 = calendar.timegm(TIME1970)
 
 # Abe-generated content should all be valid HTML and XHTML fragments.
@@ -152,24 +148,30 @@ NETHASH_SVG_TEMPLATE = """\
 # How many addresses to accept in /unspent/ADDR|ADDR|...
 MAX_UNSPENT_ADDRESSES = 200
 
+
 def make_store(args):
     store = DataStore.new(args)
     if (not args.no_load):
         store.catch_up()
     return store
 
+
 class NoSuchChainError(Exception):
     """Thrown when a chain lookup fails"""
+
 
 class PageNotFound(Exception):
     """Thrown when code wants to return 404 Not Found"""
 
+
 class Redirect(Exception):
     """Thrown when code wants to redirect the request"""
+
 
 class Streamed(Exception):
     """Thrown when code has written the document to the callable
     returned by start_response."""
+
 
 class Abe:
     def __init__(abe, store, args):
@@ -222,7 +224,7 @@ class Abe:
             "content_type": str(abe.template_vars['CONTENT_TYPE']),
             "template": abe.template,
             "chain": None,
-            }
+        }
         if 'QUERY_STRING' in env:
             page['params'] = urllib.parse.parse_qs(env['QUERY_STRING'])
 
@@ -459,15 +461,15 @@ class Abe:
         nav = ['<a href="',
                basename, '?count=', str(count), '">&lt;&lt;</a>']
         nav += [' <a href="', basename, '?hi=', str(hi + count),
-                 '&amp;count=', str(count), '">&lt;</a>']
+                '&amp;count=', str(count), '">&lt;</a>']
         nav += [' ', '&gt;']
         if hi >= count:
             nav[-1] = ['<a href="', basename, '?hi=', str(hi - count),
-                        '&amp;count=', str(count), '">', nav[-1], '</a>']
+                       '&amp;count=', str(count), '">', nav[-1], '</a>']
         nav += [' ', '&gt;&gt;']
         if hi != count - 1:
             nav[-1] = ['<a href="', basename, '?hi=', str(count - 1),
-                        '&amp;count=', str(count), '">', nav[-1], '</a>']
+                       '&amp;count=', str(count), '">', nav[-1], '</a>']
         for c in (20, 50, 100, 500, 2016):
             nav += [' ']
             if c != count:
@@ -482,7 +484,7 @@ class Abe:
         nav += [' <a href="', page['dotdot'], '">Search</a>']
 
         extra = False
-        #extra = True
+        # extra = True
         body += ['<p>', nav, '</p>\n',
                  '<table><tr><th>Block</th><th>Approx. Time</th>',
                  '<th>Transactions</th><th>Value Out</th>',
@@ -519,7 +521,7 @@ class Abe:
                 '<tr><td><a href="', page['dotdot'], 'block/',
                 abe.store.hashout_hex(hash),
                 '">', height, '</a>'
-                '</td><td>', format_time(int(nTime)),
+                              '</td><td>', format_time(int(nTime)),
                 '</td><td>', num_tx,
                 '</td><td>', format_satoshis(value_out, chain),
                 '</td><td>', util.calculate_difficulty(int(nBits)),
@@ -593,7 +595,7 @@ class Abe:
             ' (Bits: %x)' % (b['nBits'],), '<br />\n',
 
             ['Cumulative Difficulty: ', format_difficulty(
-                    util.work_to_difficulty(b['chain_work'])), '<br />\n']
+                util.work_to_difficulty(b['chain_work'])), '<br />\n']
             if b['chain_work'] is not None else '',
 
             'Nonce: ', b['nNonce'], '<br />\n',
@@ -613,8 +615,8 @@ class Abe:
              (100 * (1 - float(b['satoshi_seconds']) / b['chain_satoshi_seconds']),)]
             if b['chain_satoshi_seconds'] else '',
 
-            ['sat=',b['chain_satoshis'],';sec=',seconds,';ss=',b['satoshi_seconds'],
-             ';total_ss=',b['chain_satoshi_seconds'],';destroyed=',b['satoshis_destroyed']]
+            ['sat=', b['chain_satoshis'], ';sec=', seconds, ';ss=', b['satoshi_seconds'],
+             ';total_ss=', b['chain_satoshi_seconds'], ';destroyed=', b['satoshis_destroyed']]
             if abe.debug else '',
 
             '</p>\n']
@@ -628,7 +630,7 @@ class Abe:
         for tx in b['transactions']:
             body += ['<tr><td><a href="../tx/' + tx['hash'] + '">',
                      tx['hash'][:10], '...</a>'
-                     '</td><td>', format_satoshis(tx['fees'], chain),
+                                      '</td><td>', format_satoshis(tx['fees'], chain),
                      '</td><td>', tx['size'] / 1000.0,
                      '</td><td>']
 
@@ -690,7 +692,7 @@ class Abe:
 
         try:
             # XXX Should pass chain to export_tx to help parse scripts.
-            tx = abe.store.export_tx(tx_hash = tx_hash, format = 'browser')
+            tx = abe.store.export_tx(tx_hash=tx_hash, format='browser')
         except DataStore.MalformedHash:
             body += ['<p class="error">Not in correct format.</p>']
             return
@@ -735,7 +737,7 @@ class Abe:
                 is_coinbase = (tx_cc['tx_pos'] == 0)
             elif tx_cc['chain'].id != chain.id:
                 abe.log.warning('Transaction ' + tx['hash'] + ' in multiple chains: '
-                             + tx_cc['chain'].id + ', ' + chain.id)
+                                + tx_cc['chain'].id + ', ' + chain.id)
 
             blk_hash = tx_cc['block_hash']
             body += [
@@ -815,14 +817,14 @@ class Abe:
                      " to display.</p>"]
             return
 
-        binaddr  = history['binaddr']
-        version  = history['version']
-        chains   = history['chains']
+        binaddr = history['binaddr']
+        version = history['version']
+        chains = history['chains']
         txpoints = history['txpoints']
-        balance  = history['balance']
-        sent     = history['sent']
+        balance = history['balance']
+        sent = history['sent']
         received = history['received']
-        counts   = history['counts']
+        counts = history['counts']
 
         if (not chains):
             page['status'] = '404 Not Found'
@@ -850,13 +852,13 @@ class Abe:
         if abe.shortlink_type == "firstbits":
             link = abe.store.get_firstbits(
                 address_version=version, db_pubkey_hash=abe.store.binin(binaddr),
-                chain_id = (page['chain'] and page['chain'].id))
+                chain_id=(page['chain'] and page['chain'].id))
             if link:
                 link = link.replace('l', 'L')
             else:
                 link = address
         else:
-            link = address[0 : abe.shortlink_type]
+            link = address[0: abe.shortlink_type]
         body += abe.short_link(page, 'a/' + link)
 
         body += ['<p>Balance: '] + format_amounts(balance, True)
@@ -874,7 +876,7 @@ class Abe:
 
             body += ['<br />\nEscrow']
             for subbinaddr in history['subbinaddr']:
-                body += [' ', hash_to_address_link(chain.address_version, subbinaddr, page['dotdot'], 10) ]
+                body += [' ', hash_to_address_link(chain.address_version, subbinaddr, page['dotdot'], 10)]
 
         for chain in chains:
             balance[chain.id] = 0  # Reset for history traversal.
@@ -925,9 +927,9 @@ class Abe:
             '<p>Search by address, block number or hash, transaction or'
             ' public key hash, or chain name:</p>\n'
             '<form action="', page['dotdot'], 'search"><p>\n'
-            '<input name="q" size="64" value="', escape(q), '" />'
-            '<button type="submit">Search</button>\n'
-            '<br />Address or hash search requires at least the first ',
+                                              '<input name="q" size="64" value="', escape(q), '" />'
+                                                                                              '<button type="submit">Search</button>\n'
+                                                                                              '<br />Address or hash search requires at least the first ',
             HASH_PREFIX_MIN, ' characters.</p></form>\n']
 
     def handle_search(abe, page):
@@ -940,8 +942,10 @@ class Abe:
 
         found = []
         if HEIGHT_RE.match(q):      found += abe.search_number(int(q))
-        if util.possible_address(q):found += abe.search_address(q)
-        elif ADDR_PREFIX_RE.match(q):found += abe.search_address_prefix(q)
+        if util.possible_address(q):
+            found += abe.search_address(q)
+        elif ADDR_PREFIX_RE.match(q):
+            found += abe.search_address_prefix(q)
         if is_hash_prefix(q):       found += abe.search_hash_prefix(q)
         found += abe.search_general(q)
         abe.show_search_results(page, found)
@@ -958,7 +962,7 @@ class Abe:
             if sn == '/': sn = ''
             page['env']['SCRIPT_NAME'] = sn
             page['env']['PATH_INFO'] = '/' + page['dotdot'] + found[0]['uri']
-            del(page['env']['QUERY_STRING'])
+            del (page['env']['QUERY_STRING'])
             raise Redirect()
 
         body = page['body']
@@ -980,7 +984,7 @@ class Abe:
             return {
                 'name': chain_name + ' ' + name,
                 'uri': 'block/' + hexhash,
-                }
+            }
 
         return list(map(process, abe.store.selectall("""
             SELECT c.chain_name, b.block_hash, cc.in_longest
@@ -991,13 +995,15 @@ class Abe:
              ORDER BY c.chain_name, cc.in_longest DESC
         """, (n,))))
 
-    def search_hash_prefix(abe, q, types = ('tx', 'block', 'pubkey')):
+    def search_hash_prefix(abe, q, types=('tx', 'block', 'pubkey')):
         q = q.lower()
         ret = []
         for t in types:
             def process(row):
-                if   t == 'tx':    name = 'Transaction'
-                elif t == 'block': name = 'Block'
+                if t == 'tx':
+                    name = 'Transaction'
+                elif t == 'block':
+                    name = 'Block'
                 else:
                     # XXX Use Bitcoin address version until we implement
                     # /pubkey/... for this to link to.
@@ -1007,7 +1013,7 @@ class Abe:
                 return {
                     'name': name + ' ' + hash,
                     'uri': t + '/' + hash,
-                    }
+                }
 
             if t == 'pubkey':
                 if len(q) > 40:
@@ -1026,7 +1032,7 @@ class Abe:
         return ret
 
     def _found_address(abe, address):
-        return { 'name': 'Address ' + address, 'uri': 'address/' + address }
+        return {'name': 'Address ' + address, 'uri': 'address/' + address}
 
     def search_address(abe, address):
         try:
@@ -1045,14 +1051,14 @@ class Abe:
         all_ones = (ones == len(ap))
         minlen = max(len(ap), 24)
         l = max(35, len(ap))  # XXX Increase "35" to support multibyte
-                              # address versions.
+        # address versions.
         al = ap + ('1' * (l - len(ap)))
         ah = ap + ('z' * (l - len(ap)))
 
         def incr_str(s):
-            for i in range(len(s)-1, -1, -1):
+            for i in range(len(s) - 1, -1, -1):
                 if s[i] != '\xff':
-                    return s[:i] + chr(ord(s[i])+1) + ('\0' * (len(s) - i - 1))
+                    return s[:i] + chr(ord(s[i]) + 1) + ('\0' * (len(s) - i - 1))
             return '\1' + ('\0' * len(s))
 
         def process(row):
@@ -1074,7 +1080,7 @@ class Abe:
             vh, hh = util.decode_address(ah)
             if ones:
                 if not all_ones and \
-                        util.hash_to_address('\0', hh)[ones:][:1] == '1':
+                                util.hash_to_address('\0', hh)[ones:][:1] == '1':
                     break
             elif vh == '\0':
                 break
@@ -1100,10 +1106,12 @@ class Abe:
     def search_general(abe, q):
         """Search for something that is not an address, hash, or block number.
         Currently, this is limited to chain names and currency codes."""
+
         def process(row):
             (name, code3) = row
-            return { 'name': name + ' (' + code3 + ')',
-                     'uri': 'chain/' + str(name) }
+            return {'name': name + ' (' + code3 + ')',
+                    'uri': 'chain/' + str(name)}
+
         ret = list(map(process, abe.store.selectall("""
             SELECT chain_name, chain_code3
               FROM chain
@@ -1151,7 +1159,7 @@ class Abe:
                 abe._found_address,
                 abe.store.firstbits_to_addresses(
                     arg.lower(),
-                    chain_id = page['chain'] and page['chain'].id)))
+                    chain_id=page['chain'] and page['chain'].id)))
         else:
             addrs = abe.search_address_prefix(arg)
         abe.show_search_results(page, addrs)
@@ -1167,7 +1175,7 @@ class Abe:
             addrs = addrs.split("|");
         if len(addrs) < 1 or len(addrs) > MAX_UNSPENT_ADDRESSES:
             return 'Number of addresses must be between 1 and ' + \
-                str(MAX_UNSPENT_ADDRESSES)
+                   str(MAX_UNSPENT_ADDRESSES)
 
         if chain:
             chain_id = chain.id
@@ -1181,7 +1189,7 @@ class Abe:
         for address in addrs:
             try:
                 hashes.append(abe.store.binin(
-                        base58.bc_address_to_hash_160(address)))
+                    base58.bc_address_to_hash_160(address)))
                 good_addrs.append(address)
             except Exception:
                 pass
@@ -1191,7 +1199,7 @@ class Abe:
         if len(hashes) == 0:  # Address(es) are invalid.
             return 'Error getting unspent outputs'  # blockchain.info compatible
 
-        placeholders = "?" + (",?" * (len(hashes)-1))
+        placeholders = "?" + (",?" * (len(hashes) - 1))
 
         max_rows = abe.address_history_rows_max
         if max_rows >= 0:
@@ -1231,7 +1239,7 @@ class Abe:
              WHERE cc.in_longest = 1""" + ("" if chain_id is None else """
                AND cc.chain_id = ?""") + """
                AND pubkey.pubkey_hash IN (""" + placeholders + """)""" + (
-                "" if max_rows < 0 else """
+            "" if max_rows < 0 else """
              ORDER BY cc.block_height,
                    block_tx.tx_pos,
                    txout.txout_pos
@@ -1259,14 +1267,14 @@ class Abe:
             value = None if value is None else int(value)
             height = None if height is None else int(height)
             out.append({
-                    'tx_hash': tx_hash,
-                    'tx_output_n': out_pos,
-                    'script': script,
-                    'value': value,
-                    'value_hex': None if value is None else "%x" % value,
-                    'block_number': height})
+                'tx_hash': tx_hash,
+                'tx_output_n': out_pos,
+                'script': script,
+                'value': value,
+                'value_hex': None if value is None else "%x" % value,
+                'block_number': height})
 
-        return json.dumps({ 'unspent_outputs': out }, sort_keys=True, indent=2)
+        return json.dumps({'unspent_outputs': out}, sort_keys=True, indent=2)
 
     def do_raw(abe, page, func):
         page['content_type'] = 'text/plain'
@@ -1319,14 +1327,14 @@ class Abe:
         """shows the current block number."""
         if chain is None:
             return 'Shows the greatest block height in CHAIN.\n' \
-                '/chain/CHAIN/q/getblockcount\n'
+                   '/chain/CHAIN/q/getblockcount\n'
         return abe.get_max_block_height(chain)
 
     def q_getdifficulty(abe, page, chain):
         """shows the last solved block's difficulty."""
         if chain is None:
             return 'Shows the difficulty of the last block in CHAIN.\n' \
-                '/chain/CHAIN/q/getdifficulty\n'
+                   '/chain/CHAIN/q/getdifficulty\n'
         target = abe.store.get_target(chain.id)
         return "" if target is None else util.target_to_difficulty(target)
 
@@ -1335,7 +1343,7 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if chain is None or addr is None:
             return 'Translates ADDRESS for use in CHAIN.\n' \
-                '/chain/CHAIN/q/translate_address/ADDRESS\n'
+                   '/chain/CHAIN/q/translate_address/ADDRESS\n'
         version, hash = util.decode_check_address(addr)
         if hash is None:
             return addr + " (INVALID ADDRESS)"
@@ -1346,8 +1354,8 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if addr is None:
             return "Shows ADDRESS's version byte(s) and public key hash" \
-                ' as hex strings separated by colon (":").\n' \
-                '/q/decode_address/ADDRESS\n'
+                   ' as hex strings separated by colon (":").\n' \
+                   '/q/decode_address/ADDRESS\n'
         # XXX error check?
         version, hash = util.decode_address(addr)
         ret = version.encode('hex') + ":" + hash.encode('hex')
@@ -1360,9 +1368,9 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if addr is None:
             return 'Shows the 160-bit hash encoded in ADDRESS.\n' \
-                'For BBE compatibility, the address is not checked for' \
-                ' validity.  See also /q/decode_address.\n' \
-                '/q/addresstohash/ADDRESS\n'
+                   'For BBE compatibility, the address is not checked for' \
+                   ' validity.  See also /q/decode_address.\n' \
+                   '/q/addresstohash/ADDRESS\n'
         version, hash = util.decode_address(addr)
         return hash.encode('hex').upper()
 
@@ -1440,8 +1448,8 @@ class Abe:
         """shows statistics about difficulty and network power."""
         if chain is None:
             return 'Shows statistics every INTERVAL blocks.\n' \
-                'Negative values count back from the last block.\n' \
-                '/chain/CHAIN/q/nethash[/INTERVAL[/START[/STOP]]]\n'
+                   'Negative values count back from the last block.\n' \
+                   '/chain/CHAIN/q/nethash[/INTERVAL[/START[/STOP]]]\n'
 
         jsonp = page['params'].get('jsonp', [None])[0]
         fmt = page['params'].get('format', ["jsonp" if jsonp else "csv"])[0]
@@ -1490,7 +1498,7 @@ class Abe:
                    AND ints.block_height * ? + ? = cc.block_height)
              WHERE cc.in_longest = 1
                AND cc.chain_id = ?""" + (
-                "" if stop is None else """
+            "" if stop is None else """
                AND ints.block_height <= ?""") + """
              ORDER BY cc.block_height""",
                                    (interval, start, chain.id)
@@ -1514,19 +1522,19 @@ class Abe:
 
         for row in rows:
             height, nTime, chain_work, nBits = row
-            nTime            = float(nTime)
-            nBits            = int(nBits)
-            target           = util.calculate_target(nBits)
-            difficulty       = util.target_to_difficulty(target)
-            work             = util.target_to_work(target)
-            chain_work       = abe.store.binout_int(chain_work) - work
+            nTime = float(nTime)
+            nBits = int(nBits)
+            target = util.calculate_target(nBits)
+            difficulty = util.target_to_difficulty(target)
+            work = util.target_to_work(target)
+            chain_work = abe.store.binout_int(chain_work) - work
 
             if row is not rows[0] or fmt == "svg":
-                height           = int(height)
-                interval_work    = chain_work - prev_chain_work
-                avg_target       = util.work_to_target(
+                height = int(height)
+                interval_work = chain_work - prev_chain_work
+                avg_target = util.work_to_target(
                     interval_work / float(interval))
-                #if avg_target == target - 1:
+                # if avg_target == target - 1:
                 #    avg_target = target
                 interval_seconds = nTime - prev_nTime
                 if interval_seconds <= 0:
@@ -1541,12 +1549,12 @@ class Abe:
 
                 elif fmt in ("json", "jsonp"):
                     ret.append([
-                            height, int(nTime), target, avg_target,
-                            difficulty, work, chain_work, nethash])
+                        height, int(nTime), target, avg_target,
+                        difficulty, work, chain_work, nethash])
 
                 elif fmt == "svg":
                     ret += '<abe:nethash t="%d" d="%d"' \
-                        ' w="%d"/>\n' % (nTime, work, interval_work)
+                           ' w="%d"/>\n' % (nTime, work, interval_work)
 
             prev_nTime, prev_chain_work = nTime, chain_work
 
@@ -1569,12 +1577,12 @@ class Abe:
         """shows the amount of currency ever mined."""
         if chain is None:
             return 'Shows the amount of currency ever mined.\n' \
-                'This differs from the amount in circulation when' \
-                ' coins are destroyed, as happens frequently in Namecoin.\n' \
-                'Unlike http://blockexplorer.com/q/totalbc, this does not' \
-                ' support future block numbers, and it returns a sum of' \
-                ' observed generations rather than a calculated value.\n' \
-                '/chain/CHAIN/q/totalbc[/HEIGHT]\n'
+                   'This differs from the amount in circulation when' \
+                   ' coins are destroyed, as happens frequently in Namecoin.\n' \
+                   'Unlike http://blockexplorer.com/q/totalbc, this does not' \
+                   ' support future block numbers, and it returns a sum of' \
+                   ' observed generations rather than a calculated value.\n' \
+                   '/chain/CHAIN/q/totalbc[/HEIGHT]\n'
         height = path_info_uint(page, None)
         if height is None:
             row = abe.store.selectrow("""
@@ -1601,7 +1609,7 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if chain is None or addr is None:
             return 'returns amount of money received by given address (not balance, sends are not subtracted)\n' \
-                '/chain/CHAIN/q/getreceivedbyaddress/ADDRESS\n'
+                   '/chain/CHAIN/q/getreceivedbyaddress/ADDRESS\n'
 
         if not util.possible_address(addr):
             return 'ERROR: address invalid'
@@ -1614,7 +1622,7 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if chain is None or addr is None:
             return 'returns amount of money sent from given address\n' \
-                '/chain/CHAIN/q/getsentbyaddress/ADDRESS\n'
+                   '/chain/CHAIN/q/getsentbyaddress/ADDRESS\n'
 
         if not util.possible_address(addr):
             return 'ERROR: address invalid'
@@ -1627,7 +1635,7 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if chain is None or addr is None:
             return 'returns amount of money at the given address\n' \
-                '/chain/CHAIN/q/addressbalance/ADDRESS\n'
+                   '/chain/CHAIN/q/addressbalance/ADDRESS\n'
 
         if not util.possible_address(addr):
             return 'ERROR: address invalid'
@@ -1647,22 +1655,22 @@ class Abe:
         addr = wsgiref.util.shift_path_info(page['env'])
         if addr is None:
             return 'Shows ADDRESS\'s firstbits:' \
-                ' the shortest initial substring that uniquely and' \
-                ' case-insensitively distinguishes ADDRESS from all' \
-                ' others first appearing before it or in the same block.\n' \
-                'See http://firstbits.com/.\n' \
-                'Returns empty if ADDRESS has no firstbits.\n' \
-                '/chain/CHAIN/q/fb/ADDRESS\n' \
-                '/q/fb/ADDRESS\n'
+                   ' the shortest initial substring that uniquely and' \
+                   ' case-insensitively distinguishes ADDRESS from all' \
+                   ' others first appearing before it or in the same block.\n' \
+                   'See http://firstbits.com/.\n' \
+                   'Returns empty if ADDRESS has no firstbits.\n' \
+                   '/chain/CHAIN/q/fb/ADDRESS\n' \
+                   '/q/fb/ADDRESS\n'
 
         if not util.possible_address(addr):
             return 'ERROR: address invalid'
 
         version, dbhash = util.decode_address(addr)
         ret = abe.store.get_firstbits(
-            address_version = version,
-            db_pubkey_hash = abe.store.binin(dbhash),
-            chain_id = (chain and chain.id))
+            address_version=version,
+            db_pubkey_hash=abe.store.binin(dbhash),
+            chain_id=(chain and chain.id))
 
         if ret is None:
             return 'ERROR: address not in the chain.'
@@ -1678,15 +1686,15 @@ class Abe:
         fb = wsgiref.util.shift_path_info(page['env'])
         if fb is None:
             return 'Shows the address identified by FIRSTBITS:' \
-                ' the first address in CHAIN to start with FIRSTBITS,' \
-                ' where the comparison is case-insensitive.\n' \
-                'See http://firstbits.com/.\n' \
-                'Returns the argument if none matches.\n' \
-                '/chain/CHAIN/q/addr/FIRSTBITS\n' \
-                '/q/addr/FIRSTBITS\n'
+                   ' the first address in CHAIN to start with FIRSTBITS,' \
+                   ' where the comparison is case-insensitive.\n' \
+                   'See http://firstbits.com/.\n' \
+                   'Returns the argument if none matches.\n' \
+                   '/chain/CHAIN/q/addr/FIRSTBITS\n' \
+                   '/q/addr/FIRSTBITS\n'
 
         return "\n".join(abe.store.firstbits_to_addresses(
-                fb, chain_id = (chain and chain.id)))
+            fb, chain_id=(chain and chain.id)))
 
     def handle_download(abe, page):
         name = abe.args.download_name
@@ -1759,18 +1767,22 @@ class Abe:
             env['PATH_INFO'] = pi
         return ret
 
+
 def find_htdocs():
     return os.path.join(os.path.split(__file__)[0], 'htdocs')
+
 
 def get_int_param(page, name):
     vals = page['params'].get(name)
     return vals and int(vals[0])
+
 
 def path_info_uint(page, default):
     ret = path_info_int(page, None)
     if ret is None or ret < 0:
         return default
     return ret
+
 
 def path_info_int(page, default):
     s = wsgiref.util.shift_path_info(page['env'])
@@ -1781,9 +1793,11 @@ def path_info_int(page, default):
     except ValueError:
         return default
 
+
 def format_time(nTime):
     import time
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(nTime)))
+
 
 def format_satoshis(satoshis, chain):
     decimals = DEFAULT_DECIMALS if chain.decimals is None else chain.decimals
@@ -1800,6 +1814,7 @@ def format_satoshis(satoshis, chain):
             ('.' + (('0' * decimals) + str(frac))[-decimals:])
             .rstrip('0').rstrip('.'))
 
+
 def format_difficulty(diff):
     idiff = int(diff)
     ret = '.%03d' % (int(round((diff - idiff) * 1000)),)
@@ -1807,6 +1822,7 @@ def format_difficulty(diff):
         ret = (' %03d' % (idiff % 1000,)) + ret
         idiff = idiff / 1000
     return str(idiff) + ret
+
 
 def hash_to_address_link(version, hash, dotdot, truncate_to=None, text=None):
     if hash == DataStore.NULL_PUBKEY_HASH:
@@ -1824,6 +1840,7 @@ def hash_to_address_link(version, hash, dotdot, truncate_to=None, text=None):
 
     return ['<a href="', dotdot, 'address/', addr, '">', visible, '</a>']
 
+
 def decode_script(script):
     if script is None:
         return ''
@@ -1832,14 +1849,17 @@ def decode_script(script):
     except KeyError as e:
         return 'Nonstandard script'
 
+
 def b58hex(b58):
     try:
         return base58.b58decode(b58, None).encode('hex_codec')
     except Exception:
         raise PageNotFound()
 
+
 def hexb58(hex):
     return base58.b58encode(hex.decode('hex_codec'))
+
 
 def block_shortlink(block_hash):
     zeroes = 0
@@ -1849,7 +1869,8 @@ def block_shortlink(block_hash):
         else:
             break
     zeroes &= ~1
-    return hexb58("%02x%s" % (zeroes / 2, block_hash[zeroes : zeroes+12]))
+    return hexb58("%02x%s" % (zeroes / 2, block_hash[zeroes: zeroes + 12]))
+
 
 def shortlink_block(link):
     try:
@@ -1858,8 +1879,10 @@ def shortlink_block(link):
         raise PageNotFound()
     return ('00' * ord(data[0])) + data[1:].encode('hex_codec')
 
+
 def is_hash_prefix(s):
     return HASH_PREFIX_RE.match(s) and len(s) >= HASH_PREFIX_MIN
+
 
 def flatten(l):
     if isinstance(l, list):
@@ -1869,6 +1892,7 @@ def flatten(l):
     if isinstance(l, str):
         return l
     return str(l)
+
 
 def redirect(page):
     uri = wsgiref.util.request_uri(page['env'])
@@ -1880,6 +1904,7 @@ def redirect(page):
             '<body><h1>Moved</h1><p>This page has moved to '
             '<a href="' + uri + '">' + uri + '</a></body></html>')
 
+
 def serve(store):
     args = store.args
     abe = Abe(store, args)
@@ -1887,18 +1912,19 @@ def serve(store):
     # Hack preventing wsgiref.simple_server from resolving client addresses
     bhs = __import__('BaseHTTPServer')
     bhs.BaseHTTPRequestHandler.address_string = lambda x: x.client_address[0]
-    del(bhs)
+    del (bhs)
 
     if args.query is not None:
         def start_response(status, headers):
             pass
+
         import urllib.parse
         parsed = urllib.parse.urlparse(args.query)
         print(abe({
-                'SCRIPT_NAME':  '',
-                'PATH_INFO':    parsed.path,
-                'QUERY_STRING': parsed.query
-                }, start_response))
+            'SCRIPT_NAME': '',
+            'PATH_INFO': parsed.path,
+            'QUERY_STRING': parsed.query
+        }, start_response))
     elif args.host or args.port:
         # HTTP server.
         if args.host is None:
@@ -1927,13 +1953,15 @@ def serve(store):
             def watch():
                 if not process_is_alive(wpid):
                     abe.log.warning("process %d terminated, exiting", wpid)
-                    #os._exit(0)  # sys.exit merely raises an exception.
+                    # os._exit(0)  # sys.exit merely raises an exception.
                     os.kill(os.getpid(), signal.SIGTERM)
                     return
                 abe.log.log(0, "process %d found alive", wpid)
                 Timer(interval, watch).start()
+
             Timer(interval, watch).start()
         WSGIServer(abe).run()
+
 
 def process_is_alive(pid):
     # XXX probably fails spectacularly on Windows.
@@ -1945,8 +1973,9 @@ def process_is_alive(pid):
         if e.errno == errno.EPERM:
             return True  # process exists, but we can't send it signals.
         if e.errno == errno.ESRCH:
-            return False # no such process.
+            return False  # no such process.
         raise
+
 
 def list_policies():
     import pkgutil
@@ -1956,6 +1985,7 @@ def list_policies():
         if not ispkg:
             policies.append(name)
     return policies
+
 
 def show_policy(policy):
     import inspect
@@ -2003,26 +2033,27 @@ def show_policy(policy):
     if doc is not None:
         print(("  %s" % doc.replace('\n', '\n  ')))
 
+
 def create_conf():
     conf = {
-        "port":                     None,
-        "host":                     None,
-        "query":                    None,
-        "no_serve":                 None,
-        "no_load":                  None,
-        "timezone":                 None,
-        "debug":                    None,
-        "static_path":              None,
-        "document_root":            None,
-        "auto_agpl":                None,
-        "download_name":            None,
-        "watch_pid":                None,
-        "base_url":                 None,
-        "logging":                  None,
+        "port": None,
+        "host": None,
+        "query": None,
+        "no_serve": None,
+        "no_load": None,
+        "timezone": None,
+        "debug": None,
+        "static_path": None,
+        "document_root": None,
+        "auto_agpl": None,
+        "download_name": None,
+        "watch_pid": None,
+        "base_url": None,
+        "logging": None,
         "address_history_rows_max": None,
-        "shortlink_type":           None,
+        "shortlink_type": None,
 
-        "template":     DEFAULT_TEMPLATE,
+        "template": DEFAULT_TEMPLATE,
         "template_vars": {
             "ABE_URL": ABE_URL,
             "APPNAME": ABE_APPNAME,
@@ -2034,10 +2065,11 @@ def create_conf():
             "DONATIONS_NMC": DONATIONS_NMC,
             "CONTENT_TYPE": DEFAULT_CONTENT_TYPE,
             "HOMEPAGE": DEFAULT_HOMEPAGE,
-            },
-        }
+        },
+    }
     conf.update(DataStore.CONFIG_DEFAULTS)
     return conf
+
 
 def main(argv):
     if argv[0] == '--show-policy':
@@ -2055,7 +2087,7 @@ def main(argv):
     if not argv:
         pass
     elif argv[0] in ('-h', '--help'):
-        print ("""Usage: python -m Abe.abe [-h] [--config=FILE] [--CONFIGVAR=VALUE]...
+        print("""Usage: python -m Abe.abe [-h] [--config=FILE] [--CONFIGVAR=VALUE]...
 
 A Bitcoin block chain browser.
 
@@ -2086,7 +2118,7 @@ See abe.conf for commented examples.""")
 
     logging.basicConfig(
         stream=sys.stdout,
-        level = logging.DEBUG if args.query is None else logging.ERROR,
+        level=logging.DEBUG if args.query is None else logging.ERROR,
         format=DEFAULT_LOG_FORMAT)
     if args.logging is not None:
         import logging.config as logging_config
@@ -2109,6 +2141,7 @@ See abe.conf for commented examples.""")
     if (not args.no_serve):
         serve(store)
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

@@ -17,11 +17,11 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-import sys
 import getopt
-from . import DataStore
-from . import util
 import logging
+import sys
+
+from . import util
 
 # List of block statistics to check.
 BLOCK_STATS_LIST = [
@@ -43,22 +43,21 @@ class AbeVerify:
         self.block_max = None
 
         self.ckmerkle = False
-        self.ckbti    = False
-        self.ckstats  = False
+        self.ckbti = False
+        self.ckstats = False
 
         self.repair = False
         self.blkstats = BLOCK_STATS_LIST
         self.stats = {
-            'mchecked': 0, # Blocks checked for Merkel root
-            'mbad':     0, # Merkle errors
-            'schecked': 0, # Blocks checked for stats
-            'sbad':     0, # Blocks with any stats error
-            'btiblks':    0, # Blocks checked for block_txin links
-            'btichecked': 0, # block_txin txin_id's checked
-            'btimiss':    0, # Missing txin_id's
-            'btibad':     0, # txin_id's linked to wrong block (untested)
+            'mchecked': 0,  # Blocks checked for Merkel root
+            'mbad': 0,  # Merkle errors
+            'schecked': 0,  # Blocks checked for stats
+            'sbad': 0,  # Blocks with any stats error
+            'btiblks': 0,  # Blocks checked for block_txin links
+            'btichecked': 0,  # block_txin txin_id's checked
+            'btimiss': 0,  # Missing txin_id's
+            'btibad': 0,  # txin_id's linked to wrong block (untested)
         }
-
 
     def verify_blockchain(self, chain_id, chain):
         # Reset stats
@@ -76,9 +75,9 @@ class AbeVerify:
             SELECT block_id, block_height
               FROM chain_candidate
              WHERE chain_id = ?""" + (
-            "" if self.block_min is None else """
+                "" if self.block_min is None else """
                AND block_height >= ?""") + (
-            "" if self.block_max is None else """
+                "" if self.block_max is None else """
                AND block_height <= ?""") + """
           ORDER BY block_height ASC, block_id ASC""", params):
 
@@ -89,19 +88,19 @@ class AbeVerify:
             if self.ckmerkle:
                 self.verify_tx_merkle_hash(block_id, chain)
                 self.procstats("Merkle trees", block_height,
-                    self.stats['mchecked'], self.stats['mbad'])
+                               self.stats['mchecked'], self.stats['mbad'])
 
             if self.ckbti:
                 self.verify_block_txin(block_id, chain_id)
                 self.procstats("Block txins", block_height,
-                    self.stats['btichecked'],
-                    self.stats['btimiss'] + self.stats['btibad'],
-                    blocks=self.stats['btiblks'])
+                               self.stats['btichecked'],
+                               self.stats['btimiss'] + self.stats['btibad'],
+                               blocks=self.stats['btiblks'])
 
             if self.ckstats:
                 self.verify_block_stats(block_id, chain_id)
                 self.procstats("Block stats", block_height,
-                    self.stats['schecked'], self.stats['sbad'])
+                               self.stats['schecked'], self.stats['sbad'])
 
             if self.repair:
                 # XXX: Make this time-based? The goal is to not hold locks for
@@ -111,19 +110,18 @@ class AbeVerify:
 
         if self.ckmerkle:
             self.procstats("Merkle trees", block_height, self.stats['mchecked'],
-                self.stats['mbad'], last=True)
+                           self.stats['mbad'], last=True)
         if self.ckbti:
             self.procstats("Block txins", block_height,
-                self.stats['btichecked'],
-                self.stats['btimiss'] + self.stats['btibad'],
-                blocks=self.stats['btiblks'], last=True)
+                           self.stats['btichecked'],
+                           self.stats['btimiss'] + self.stats['btibad'],
+                           blocks=self.stats['btiblks'], last=True)
         if self.ckstats:
             self.procstats("Block stats", block_height, self.stats['schecked'],
-                self.stats['sbad'], last=True)
+                           self.stats['sbad'], last=True)
 
         if self.repair:
             self.store.commit()
-
 
     def procstats(self, name, height, checked, bad, blocks=False, last=False):
         if blocks is False:
@@ -133,7 +131,6 @@ class AbeVerify:
             lst = ("last " if last else "")
             self.logger.warning("%d %s (%sheight: %d): %s bad",
                                 checked, name, lst, height, bad)
-
 
     def verify_tx_merkle_hash(self, block_id, chain):
         block_height, merkle_root, num_tx = self.store.selectrow("""
@@ -162,7 +159,6 @@ class AbeVerify:
             bad = 1
         self.stats['mbad'] += bad
         self.stats['mchecked'] += 1
-
 
     def verify_block_txin(self, block_id, chain_id):
         rows = self.store.selectall("""
@@ -197,7 +193,7 @@ class AbeVerify:
 
             # Check all txin_id's already present (what we would insert)
             for txin_id, obt_id in self._populate_block_txin(int(block_id),
-                    skip_txin=missing, check_only=True):
+                                                             skip_txin=missing, check_only=True):
                 if obt_id != known_ids[txin_id]:
                     redo.add(txin_id)
                     self.logger.info("block id %d: txin_id %d out_block_id "
@@ -217,13 +213,11 @@ class AbeVerify:
             self._populate_block_txin(int(block_id), skip_txin=skip_ids)
             self.logger.info("block id %d: txin links repaired", block_id)
 
-
         # Record stats
         self.stats['btimiss'] += len(missing)
-        self.stats['btibad']  += len(redo)
+        self.stats['btibad'] += len(redo)
         self.stats['btiblks'] += 1
         self.stats['btichecked'] += checks + len(missing)
-
 
     def verify_block_stats(self, block_id, chain_id):
         block_height, nTime, value_in, value_out, total_satoshis, \
@@ -249,9 +243,9 @@ class AbeVerify:
                 prev_nTime = nTime
             elif self.repair:
                 raise Exception("Repair with broken prev block, dazed and "
-                    "confused... block %s (height %s): %s" % (
-                    block_id, block_height, str((prev_satoshis, prev_seconds,
-                                                 prev_ss, prev_total_ss))))
+                                "confused... block %s (height %s): %s" % (
+                                    block_id, block_height, str((prev_satoshis, prev_seconds,
+                                                                 prev_ss, prev_total_ss))))
             else:
                 # Prev block contain broken data; cannot check current (and
                 # it is likely bad as well)
@@ -335,7 +329,7 @@ class AbeVerify:
                   JOIN block_tx obt ON (txout_approx.tx_id = obt.tx_id)
                   JOIN block b ON (obt.block_id = b.block_id)
                  WHERE bti.block_id = ? AND txin.tx_id = ?""",
-                                            (block_id, tx_id)):
+                                                                 (block_id, tx_id)):
                 destroyed += txout_value * (nTime - block_nTime)
             b['ss_destroyed'] += destroyed
 
@@ -381,20 +375,19 @@ class AbeVerify:
                        block_total_ss = ?,
                        block_ss_destroyed = ?
                  WHERE block_id = ?""",
-                      (self.store.intin(b['value_in']),
-                       self.store.intin(b['value_out']),
-                       self.store.intin(b['total_seconds']),
-                       self.store.intin(b['total_satoshis']),
-                       self.store.intin(b['satoshi_seconds']),
-                       self.store.intin(b['total_ss']),
-                       self.store.intin(b['ss_destroyed']),
-                       block_id))
+                           (self.store.intin(b['value_in']),
+                            self.store.intin(b['value_out']),
+                            self.store.intin(b['total_seconds']),
+                            self.store.intin(b['total_satoshis']),
+                            self.store.intin(b['satoshi_seconds']),
+                            self.store.intin(b['total_ss']),
+                            self.store.intin(b['ss_destroyed']),
+                            block_id))
             self.logger.info("block %d (id %d): stats repaired",
                              block_height, block_id)
 
         if badcheck:
             self.stats['sbad'] += 1
-
 
     # Copied and modified from the same function in DataStore.py
     def _populate_block_txin(self, block_id, skip_txin=set(), check_only=False):
@@ -543,7 +536,6 @@ def main(argv):
         print("No checks selected!\n\n", cmdline.usage())
         return 1
 
-
     for chain_id, in store.selectall("""
         SELECT chain_id FROM chain ORDER BY chain_id DESC"""):
         chain = store.chains_by.id[chain_id]
@@ -553,7 +545,7 @@ def main(argv):
             chains.remove(chain.name)
 
         logger.warning("Checking %s chain (id %d) at height %d",
-                chain.name, chain_id, (chk.block_min if chk.block_min else 0))
+                       chain.name, chain_id, (chk.block_min if chk.block_min else 0))
 
         try:
             chk.verify_blockchain(chain_id, chain)
@@ -562,7 +554,7 @@ def main(argv):
             store.close()
             raise
 
-        endmsg="Chain %s: %d blocks checked"
+        endmsg = "Chain %s: %d blocks checked"
         endparams = (max(chk.stats['mchecked'], chk.stats['schecked']),)
         err += max(chk.stats['mbad'], chk.stats['sbad'])
         if chk.ckmerkle and chk.stats['mbad']:
@@ -584,11 +576,12 @@ def main(argv):
     if chains:
         err += 1
         logger.warning("%d chain%s not found: %s",
-            len(chains),
-            ("s" if len(chains) > 1 else ""),
-            ', '.join(chains),
-        )
+                       len(chains),
+                       ("s" if len(chains) > 1 else ""),
+                       ', '.join(chains),
+                       )
     return err and 1
+
 
 if __name__ == '__main__':
     try:

@@ -68,7 +68,7 @@ def get(tx_hash_hex):
     # Extract your chain's genesis transaction data from the first
     # block file and add it here, or better yet, patch your coin's
     # getrawtransaction to return it on request:
-    #if tx_hash_hex == "<HASH>"
+    # if tx_hash_hex == "<HASH>"
     #    return "<DATA>"
 
     return None

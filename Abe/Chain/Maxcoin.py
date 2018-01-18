@@ -17,10 +17,12 @@
 from .KeccakChain import KeccakChain
 from .. import util
 
+
 class Maxcoin(KeccakChain):
     """
     Maxcoin uses Keccak for block headers and single SHA-256 for transactions.
     """
+
     def __init__(chain, **kwargs):
         chain.name = 'Maxcoin'
         chain.code3 = 'MAX'

@@ -18,10 +18,10 @@
 """Reconfigure an Abe instance."""
 
 import sys
-import logging
 
-from . import util
 from . import firstbits
+from . import util
+
 
 def keep_scriptsig_reconfigure(store, args):
     have = store.keep_scriptsig
@@ -48,6 +48,7 @@ def keep_scriptsig_reconfigure(store, args):
     finally:
         store.release_lock(lock)
 
+
 def main(argv):
     cmdline = util.CmdLine(argv)
     cmdline.usage = lambda: \
@@ -70,6 +71,7 @@ All configuration variables may be given as command arguments."""
     firstbits.reconfigure(store, args)
     keep_scriptsig_reconfigure(store, args)
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

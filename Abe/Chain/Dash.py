@@ -16,6 +16,7 @@
 
 from .X11Chain import X11Chain
 
+
 class Dash(X11Chain):
     def __init__(chain, **kwargs):
         chain.name = 'Dash'

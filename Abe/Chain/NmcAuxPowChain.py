@@ -17,10 +17,12 @@
 from . import BaseChain
 from .. import deserialize
 
+
 class NmcAuxPowChain(BaseChain):
     """
     A blockchain that represents merge-mining proof-of-work in an "AuxPow" structure as does Namecoin.
     """
+
     def __init__(chain, **kwargs):
         BaseChain.__init__(chain, **kwargs)
 
@@ -32,4 +34,4 @@ class NmcAuxPowChain(BaseChain):
 
     def has_feature(chain, feature):
         return feature == 'block_version_bit8_merge_mine' \
-            or BaseChain.has_feature(chain, feature)
+               or BaseChain.has_feature(chain, feature)

@@ -3,6 +3,7 @@
 
 import hashlib
 
+
 def new(data=''):
     h = hashlib.new('ripemd160')
     h.update(data)

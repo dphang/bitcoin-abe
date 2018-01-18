@@ -16,16 +16,16 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-import re
 import logging
+import re
 
 MAX_SCRIPT = 1000000
 MAX_PUBKEY = 65
 NO_CLOB = 'BUG_NO_CLOB'
 STMT_RE = re.compile(r"([^']+)((?:'[^']*')?)")
 
-class SqlAbstraction(object):
 
+class SqlAbstraction(object):
     """
     Database abstraction class based on DB-API 2 and standard SQL with
     workarounds to support SQLite3, PostgreSQL/psycopg2, MySQL,
@@ -40,7 +40,7 @@ class SqlAbstraction(object):
         sql.binary_type = args.binary_type
         sql.int_type = args.int_type
 
-        sql.log    = logging.getLogger(__name__)
+        sql.log = logging.getLogger(__name__)
         sql.sqllog = logging.getLogger(__name__ + ".sql")
         if not args.log_sql:
             sql.sqllog.setLevel(logging.WARNING)
@@ -54,6 +54,7 @@ class SqlAbstraction(object):
     def _set_flavour(sql):
         def identity(x):
             return x
+
         transform = identity
         transform_stmt = sql._transform_stmt
         selectall = sql._selectall
@@ -74,26 +75,30 @@ class SqlAbstraction(object):
         # human expectations.
         def rev(x):
             return None if x is None else x[::-1]
+
         def to_hex(x):
             return None if x is None else str(x).encode('hex')
+
         def from_hex(x):
             return None if x is None else x.decode('hex')
+
         def to_hex_rev(x):
             return None if x is None else str(x)[::-1].encode('hex')
+
         def from_hex_rev(x):
             return None if x is None else x.decode('hex')[::-1]
 
         val = sql.config.get('binary_type')
 
         if val in (None, 'str', "binary"):
-            binin       = identity
-            binin_hex   = from_hex
-            binout      = identity
-            binout_hex  = to_hex
-            revin       = rev
-            revin_hex   = from_hex
-            revout      = rev
-            revout_hex  = to_hex
+            binin = identity
+            binin_hex = from_hex
+            binout = identity
+            binout_hex = to_hex
+            revin = rev
+            revin_hex = from_hex
+            revout = rev
+            revout_hex = to_hex
 
         elif val in ("buffer", "bytearray", "pg-bytea"):
             if val == "bytearray":
@@ -106,28 +111,28 @@ class SqlAbstraction(object):
             def to_str(x):
                 return None if x is None else str(x)
 
-            binin       = to_btype
-            binin_hex   = lambda x: to_btype(from_hex(x))
-            binout      = to_str
-            binout_hex  = to_hex
-            revin       = lambda x: to_btype(rev(x))
-            revin_hex   = lambda x: to_btype(from_hex(x))
-            revout      = rev
-            revout_hex  = to_hex
+            binin = to_btype
+            binin_hex = lambda x: to_btype(from_hex(x))
+            binout = to_str
+            binout_hex = to_hex
+            revin = lambda x: to_btype(rev(x))
+            revin_hex = lambda x: to_btype(from_hex(x))
+            revout = rev
+            revout_hex = to_hex
 
             if val == "pg-bytea":
                 transform_stmt = sql._binary_as_bytea(transform_stmt)
 
         elif val == "hex":
             transform = sql._binary_as_hex(transform)
-            binin       = to_hex
-            binin_hex   = identity
-            binout      = from_hex
-            binout_hex  = identity
-            revin       = to_hex_rev
-            revin_hex   = identity
-            revout      = from_hex_rev
-            revout_hex  = identity
+            binin = to_hex
+            binin_hex = identity
+            binout = from_hex
+            binout_hex = identity
+            revin = to_hex_rev
+            revin_hex = identity
+            revout = from_hex_rev
+            revout_hex = identity
 
         else:
             raise Exception("Unsupported binary-type %s" % (val,))
@@ -140,11 +145,13 @@ class SqlAbstraction(object):
             import decimal
             def _intin(x):
                 return None if x is None else decimal.Decimal(x)
+
             intin = _intin
 
         elif val == 'str':
             def _intin(x):
                 return None if x is None else str(x)
+
             intin = _intin
             # Work around sqlite3's integer overflow.
             transform = sql._approximate(transform)
@@ -184,7 +191,9 @@ class SqlAbstraction(object):
             def fix_lob(fn):
                 def ret(x):
                     return None if x is None else fn(str(x))
+
                 return ret
+
             binout = fix_lob(binout)
             binout_hex = fix_lob(binout_hex)
 
@@ -213,29 +222,31 @@ class SqlAbstraction(object):
         sql.selectall = selectall
         sql._cache = {}
 
-        sql.binin       = binin
-        sql.binin_hex   = binin_hex
-        sql.binout      = binout
-        sql.binout_hex  = binout_hex
-        sql.revin       = revin
-        sql.revin_hex   = revin_hex
-        sql.revout      = revout
-        sql.revout_hex  = revout_hex
+        sql.binin = binin
+        sql.binin_hex = binin_hex
+        sql.binout = binout
+        sql.binout_hex = binout_hex
+        sql.revin = revin
+        sql.revin_hex = revin_hex
+        sql.revout = revout
+        sql.revout_hex = revout_hex
 
         # Might reimplement these someday...
         def binout_int(x):
             if x is None:
                 return None
             return int(binout_hex(x), 16)
+
         def binin_int(x, bits):
             if x is None:
                 return None
             return binin_hex(("%%0%dx" % (bits / 4)) % x)
-        sql.binout_int  = binout_int
-        sql.binin_int   = binin_int
 
-        sql.intin       = intin
-        sql.new_id      = new_id
+        sql.binout_int = binout_int
+        sql.binin_int = binin_int
+
+        sql.intin = intin
+        sql.new_id = new_id
         sql.create_sequence = create_sequence
         sql.drop_sequence = drop_sequence
 
@@ -251,9 +262,10 @@ class SqlAbstraction(object):
                 # Perhaps this driver needs its strings encoded.
                 # Python's default is ASCII.  Let's try UTF-8, which
                 # should be the default anyway.
-                #import locale
-                #enc = locale.getlocale()[1] or locale.getdefaultlocale()[1]
+                # import locale
+                # enc = locale.getlocale()[1] or locale.getdefaultlocale()[1]
                 enc = 'UTF-8'
+
                 def to_utf8(obj):
                     if isinstance(obj, dict):
                         for k in list(obj.keys()):
@@ -263,6 +275,7 @@ class SqlAbstraction(object):
                     if isinstance(obj, str):
                         return obj.encode(enc)
                     return obj
+
                 conn = sql._connect(to_utf8(cargs))
                 sql.log.info("Connection required conversion to UTF-8")
 
@@ -270,10 +283,10 @@ class SqlAbstraction(object):
 
     def _connect(sql, cargs):
         if isinstance(cargs, dict):
-            if ""  in cargs:
+            if "" in cargs:
                 cargs = cargs.copy()
                 nkwargs = cargs[""]
-                del(cargs[""])
+                del (cargs[""])
                 if isinstance(nkwargs, list):
                     return sql.module.connect(*nkwargs, **cargs)
                 return sql.module.connect(nkwargs, **cargs)
@@ -308,25 +321,32 @@ class SqlAbstraction(object):
     def _transform_stmt(sql, stmt):
         def transform_chunk(match):
             return sql.transform_chunk(match.group(1)) + match.group(2)
+
         return STMT_RE.sub(transform_chunk, stmt)
 
     # Convert standard placeholders to Python "format" style.
     def _qmark_to_format(sql, fn):
         def ret(stmt):
             return fn(stmt.replace('%', '%%').replace("?", "%s"))
+
         return ret
 
     # Convert standard placeholders to Python "named" style.
     def _qmark_to_named(sql, fn):
         patt = re.compile(r"\?")
+
         def ret(stmt):
             i = [0]
+
             def newname(match):
                 i[0] += 1
                 return ":p%d" % (i[0],)
+
             def transform_chunk(match):
                 return patt.sub(newname, match.group(1)) + match.group(2)
+
             return fn(STMT_RE.sub(transform_chunk, stmt))
+
         return ret
 
     # Convert the standard BINARY type to a hex string for databases
@@ -334,17 +354,21 @@ class SqlAbstraction(object):
     def _binary_as_hex(sql, fn):
         patt = re.compile(r"\b((?:VAR)?)BINARY\s*\(\s*([0-9]+)\s*\)")
         x_patt = re.compile(r"X\z")
+
         def fixup(match):
             return (match.group(1) + "CHAR(" +
                     str(int(match.group(2)) * 2) + ")")
+
         def ret(chunk):
             return fn(x_patt.sub("", patt.sub(fixup, chunk)))
+
         return ret
 
     # Convert the standard BINARY type to the PostgreSQL BYTEA type.
     def _binary_as_bytea(sql, fn):
         type_patt = re.compile("((?:VAR)?)BINARY\\(([0-9]+)\\)")
         lit_patt = re.compile("X'((?:[0-9a-fA-F][0-9a-fA-F])*)'")
+
         def ret(stmt):
             def transform_chunk(match):
                 ret = type_patt.sub("BYTEA", match.group(1))
@@ -356,7 +380,9 @@ class SqlAbstraction(object):
                 else:
                     ret += match.group(2)
                 return ret
+
             return fn(STMT_RE.sub(transform_chunk, stmt))
+
         return ret
 
     # Converts VARCHAR types that are too long to CLOB or similar.
@@ -406,13 +432,16 @@ class SqlAbstraction(object):
     def _approximate(store, fn):
         def repl(match):
             return 'CAST(' + match.group(1) + match.group(2) + ' AS DOUBLE PRECISION) ' \
-                + match.group(1) + '_approx' + match.group(2)
+                   + match.group(1) + '_approx' + match.group(2)
+
         def ret(stmt):
             return fn(re.sub(r'\b(\w+)(\w*) \1_approx\2\b', repl, stmt))
+
         return ret
 
     def emulate_limit(sql, selectall):
         limit_re = re.compile(r"(.*)\bLIMIT\s+(\?|\d+)\s*\Z", re.DOTALL)
+
         def ret(stmt, params=()):
             match = limit_re.match(sql.transform_stmt_cached(stmt))
             if match:
@@ -422,24 +451,30 @@ class SqlAbstraction(object):
                 else:
                     n = int(match.group(2))
                 sql.cursor().execute(match.group(1), params)
-                return [ sql.cursor().fetchone() for i in range(n) ]
+                return [sql.cursor().fetchone() for i in range(n)]
             return selectall(stmt, params)
+
         return ret
 
     def _transform_concat(sql, fn):
         concat_re = re.compile(r"((?:(?:'[^']*'|\?)\s*\|\|\s*)+(?:'[^']*'|\?))", re.DOTALL)
+
         def repl(match):
             clist = re.sub(r"\s*\|\|\s*", ", ", match.group(1))
             return 'CONCAT(' + clist + ')'
+
         def ret(stmt):
             return fn(concat_re.sub(repl, stmt))
+
         return ret
 
     def _transform_varbinary(sql, fn):
         varbinary_re = re.compile(r"VARBINARY\(" + str(MAX_SCRIPT) + "\)")
+
         def ret(stmt):
             # Suitable for prefix+length up to 16,777,215 (2^24 - 1)
             return fn(varbinary_re.sub("MEDIUMBLOB", stmt))
+
         return ret
 
     def _append_table_epilogue(sql, fn):
@@ -453,6 +488,7 @@ class SqlAbstraction(object):
             if patt.match(stmt):
                 stmt += epilogue
             return fn(stmt)
+
         return ret
 
     def transform_stmt_cached(sql, stmt):
@@ -597,7 +633,7 @@ class SqlAbstraction(object):
 
     def _new_id_db2(sql, key):
         (ret,) = sql.selectrow("SELECT NEXTVAL FOR " + key + "_seq"
-                               " FROM %sdual" % sql.prefix)
+                                                             " FROM %sdual" % sql.prefix)
         return ret
 
     def _create_sequence_mysql(sql, key):
@@ -655,11 +691,11 @@ class SqlAbstraction(object):
 
     def configure_binary_type(sql):
         defaults = (['binary', 'bytearray', 'buffer', 'hex', 'pg-bytea']
-            if sql.binary_type is None else
-            [ sql.binary_type ])
+                    if sql.binary_type is None else
+                    [sql.binary_type])
         tests = (defaults
                  if sql.config.get('binary_type') is None else
-                 [ sql.config['binary_type'] ])
+                 [sql.config['binary_type']])
 
         for val in tests:
             sql.config['binary_type'] = val
@@ -675,11 +711,11 @@ class SqlAbstraction(object):
 
     def configure_int_type(sql):
         defaults = (['int', 'decimal', 'str']
-            if sql.int_type is None else
-            [ sql.int_type ])
+                    if sql.int_type is None else
+                    [sql.int_type])
 
         tests = (defaults if sql.config.get('int_type') is None else
-                 [ sql.config['int_type'] ])
+                 [sql.config['int_type']])
 
         for val in tests:
             sql.config['int_type'] = val
@@ -710,6 +746,7 @@ class SqlAbstraction(object):
 
     def drop_table_if_exists(sql, obj):
         sql._drop_if_exists("TABLE", obj)
+
     def drop_view_if_exists(sql, obj):
         sql._drop_if_exists("VIEW", obj)
 
@@ -776,7 +813,7 @@ class SqlAbstraction(object):
             sql.sql("INSERT INTO %stest_1 (a) VALUES (5)" % sql.prefix)
             sql.rollback()
             data = [int(row[0]) for row in sql.selectall(
-                    "SELECT a FROM %stest_1" % sql.prefix)]
+                "SELECT a FROM %stest_1" % sql.prefix)]
             return data == [4]
         except sql.module.DatabaseError as e:
             sql.rollback()
@@ -1005,4 +1042,3 @@ class SqlAbstraction(object):
 
         sql.rollback()
         return False
-

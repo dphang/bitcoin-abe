@@ -17,6 +17,7 @@
 
 """Reconfigure an Abe instance to use or not use Firstbits."""
 
+
 def populate_firstbits(store):
     blocks, fbs = 0, 0
     log_incr = 1000
@@ -38,6 +39,7 @@ def populate_firstbits(store):
         store.commit()
         store.log.info("%d firstbits in %d blocks" % (fbs, blocks))
 
+
 def create_firstbits(store):
     store.log.info("Creating firstbits table.")
     store.ddl(
@@ -54,9 +56,11 @@ def create_firstbits(store):
         """CREATE INDEX x_abe_firstbits
             ON abe_firstbits (address_version, firstbits)""")
 
+
 def drop_firstbits(store):
     store.log.info("Dropping firstbits table.")
     store.ddl("DROP TABLE abe_firstbits")
+
 
 def reconfigure(store, args):
     have = store.config['use_firstbits'] == "true"

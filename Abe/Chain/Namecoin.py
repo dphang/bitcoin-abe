@@ -14,14 +14,16 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-from .Sha256NmcAuxPowChain import Sha256NmcAuxPowChain
 from . import SCRIPT_TYPE_UNKNOWN
+from .Sha256NmcAuxPowChain import Sha256NmcAuxPowChain
 from ..deserialize import opcodes
+
 
 class Namecoin(Sha256NmcAuxPowChain):
     """
     Namecoin represents name operations in transaction output scripts.
     """
+
     def __init__(chain, **kwargs):
         chain.name = 'Namecoin'
         chain.code3 = 'NMC'
@@ -40,8 +42,8 @@ class Namecoin(Sha256NmcAuxPowChain):
             opcode = decoded[i][0]
 
             if decoded[i][1] is not None or \
-                    opcode == opcodes.OP_0 or \
-                    opcode == opcodes.OP_1NEGATE or \
+                            opcode == opcodes.OP_0 or \
+                            opcode == opcodes.OP_1NEGATE or \
                     (opcode >= opcodes.OP_1 and opcode <= opcodes.OP_16):
                 pushed += 1
             elif opcode in chain._drops:
@@ -54,7 +56,6 @@ class Namecoin(Sha256NmcAuxPowChain):
                 return Sha256NmcAuxPowChain.parse_decoded_txout_script(chain, decoded[start:])
 
         return SCRIPT_TYPE_UNKNOWN, decoded
-
 
     datadir_conf_file_name = "namecoin.conf"
     datadir_rpcport = 8336

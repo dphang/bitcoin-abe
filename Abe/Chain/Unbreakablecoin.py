@@ -16,6 +16,7 @@
 
 from .Sha256Chain import Sha256Chain
 
+
 class Unbreakablecoin(Sha256Chain):
     def __init__(chain, **kwargs):
         chain.name = 'Unbreakablecoin'

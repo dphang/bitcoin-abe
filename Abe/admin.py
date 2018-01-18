@@ -18,16 +18,18 @@
 """Delete a chain from the database, etc."""
 
 import sys
-import logging
 
 from . import util
+
 
 def commit(store):
     store.commit()
     store.log.info("Commit.")
 
+
 def log_rowcount(store, msg):
     store.log.info(msg, store.rowcount())
+
 
 def link_txin(store):
     store.log.info(
@@ -50,6 +52,7 @@ def link_txin(store):
                  WHERE txin.txin_id = unlinked_txin.txin_id) IS NOT NULL""")
     log_rowcount(store, "Deleted %d unlinked_txin.")
     commit(store)
+
 
 def delete_tx(store, id_or_hash):
     try:
@@ -77,6 +80,7 @@ def delete_tx(store, id_or_hash):
 
     commit(store)
 
+
 def rewind_datadir(store, dirname):
     store.sql("""
         UPDATE datadir
@@ -87,6 +91,7 @@ def rewind_datadir(store, dirname):
     log_rowcount(store, "Datadir blockfile pointers rewound: %d")
     commit(store)
 
+
 def rewind_chain_blockfile(store, name, chain_id):
     store.sql("""
         UPDATE datadir
@@ -96,10 +101,12 @@ def rewind_chain_blockfile(store, name, chain_id):
               (chain_id,))
     log_rowcount(store, "Datadir blockfile pointers rewound: %d")
 
+
 def chain_name_to_id(store, name):
     (chain_id,) = store.selectrow(
         "SELECT chain_id FROM chain WHERE chain_name = ?", (name,))
     return chain_id
+
 
 def del_chain_blocks_1(store, name, chain_id):
     store.sql("UPDATE chain SET chain_last_block_id = NULL WHERE chain_id = ?",
@@ -112,28 +119,28 @@ def del_chain_blocks_1(store, name, chain_id):
                search_block_id = NULL
          WHERE block_id IN (
             SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Disconnected %d blocks from chain.")
     commit(store)
 
     store.sql("""
         DELETE FROM orphan_block WHERE block_id IN (
             SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Deleted %d from orphan_block.")
     commit(store)
 
     store.sql("""
         DELETE FROM block_next WHERE block_id IN (
             SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Deleted %d from block_next.")
     commit(store)
 
     store.sql("""
         DELETE FROM block_txin WHERE block_id IN (
             SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Deleted %d from block_txin.")
     commit(store)
 
@@ -141,19 +148,21 @@ def del_chain_blocks_1(store, name, chain_id):
         store.sql("""
             DELETE FROM abe_firstbits WHERE block_id IN (
                 SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                            (chain_id,))
+                  (chain_id,))
         log_rowcount(store, "Deleted %d from abe_firstbits.")
         commit(store)
+
 
 def del_chain_block_tx(store, name, chain_id):
     store.sql("""
         DELETE FROM block_tx WHERE block_id IN (
             SELECT block_id FROM chain_candidate WHERE chain_id = ?)""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Deleted %d from block_tx.")
     commit(store)
 
-def delete_chain_blocks(store, name, chain_id = None):
+
+def delete_chain_blocks(store, name, chain_id=None):
     if chain_id is None:
         chain_id = chain_name_to_id(store, name)
 
@@ -162,7 +171,8 @@ def delete_chain_blocks(store, name, chain_id = None):
     del_chain_block_tx(store, name, chain_id)
     del_chain_blocks_2(store, name, chain_id)
 
-def delete_chain_transactions(store, name, chain_id = None):
+
+def delete_chain_transactions(store, name, chain_id=None):
     if chain_id is None:
         chain_id = chain_name_to_id(store, name)
 
@@ -224,15 +234,16 @@ def delete_chain_transactions(store, name, chain_id = None):
 
     del_chain_blocks_2(store, name, chain_id)
 
+
 def del_chain_blocks_2(store, name, chain_id):
     block_ids = []
     for row in store.selectall(
-        "SELECT block_id FROM chain_candidate WHERE chain_id = ?", (chain_id,)):
+            "SELECT block_id FROM chain_candidate WHERE chain_id = ?", (chain_id,)):
         block_ids.append(int(row[0]))
 
     store.sql("""
         DELETE FROM chain_candidate WHERE chain_id = ?""",
-                        (chain_id,))
+              (chain_id,))
     log_rowcount(store, "Deleted %d from chain_candidate.")
 
     deleted = 0
@@ -243,6 +254,7 @@ def del_chain_blocks_2(store, name, chain_id):
 
     rewind_chain_blockfile(store, name, chain_id)
     commit(store)
+
 
 def main(argv):
     cmdline = util.CmdLine(argv)
@@ -290,6 +302,7 @@ Commands:
             raise ValueError("Unknown command: " + command)
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

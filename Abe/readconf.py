@@ -17,6 +17,7 @@
 def looks_like_json(val):
     return val[:1] in ('"', '[', '{') or val in ('true', 'false', 'null')
 
+
 def parse_argv(argv, conf={}, config_name='config', strict=False):
     arg_dict = conf.copy()
     args = lambda var: arg_dict[var]
@@ -66,18 +67,23 @@ def parse_argv(argv, conf={}, config_name='config', strict=False):
 
     return args, argv[i:]
 
+
 def include(filename, conf={}, config_name='config', strict=False):
     _include(set(), filename, conf, config_name, strict)
     return conf
 
+
 class _Reader:
     __slots__ = ['fp', 'lineno', 'line']
+
     def __init__(rdr, fp):
         rdr.fp = fp
         rdr.lineno = 1
         rdr.line = rdr.fp.read(1)
+
     def eof(rdr):
         return rdr.line == ''
+
     def getc(rdr):
         if rdr.eof():
             return ''
@@ -90,18 +96,22 @@ class _Reader:
             rdr.line = ''
         rdr.line += c
         return ret
+
     def peek(rdr):
         if rdr.eof():
             return ''
         return rdr.line[-1]
+
     def _readline(rdr):
         ret = rdr.fp.readline()
         rdr.line += ret
         return ret
+
     def readline(rdr):
         ret = rdr.peek() + rdr._readline()
         rdr.getc()  # Consume the newline if not at EOF.
         return ret
+
     def get_error_context(rdr, e):
         e.lineno = rdr.lineno
         if not rdr.eof():
@@ -109,6 +119,7 @@ class _Reader:
             if rdr.peek() != '\n':
                 rdr._readline()
             e.text = rdr.line
+
 
 def _include(seen, filename, conf, config_name, strict):
     if filename in seen:
@@ -141,6 +152,7 @@ def _include(seen, filename, conf, config_name, strict):
             conf[var] = val
     return
 
+
 def read(rdr):
     """
     Read name-value pairs from file and return the results as a list
@@ -155,6 +167,7 @@ def read(rdr):
     stores True as the value.
     """
     entries = []
+
     def store(name, value, additive):
         entries.append((name, value, additive))
 
@@ -221,6 +234,7 @@ def read(rdr):
 
     return entries
 
+
 def add(conf, var, val):
     if var not in conf:
         conf[var] = val
@@ -236,6 +250,7 @@ def add(conf, var, val):
         conf[var] += val
     else:
         conf[var].append(val)
+
 
 # Scan to end of JSON object.  Grrr, why can't json.py do this without
 # reading all of fp?
@@ -261,6 +276,7 @@ def _scan_json_string(rdr):
         if c == '\\':
             ret += rdr.getc()
 
+
 def _scan_json_nonstring(rdr):
     # Assume we are at a number or true|false|null.
     # Scan the token.
@@ -268,6 +284,7 @@ def _scan_json_nonstring(rdr):
     while rdr.peek() != '' and rdr.peek() in '-+0123456789.eEtrufalsn':
         ret += rdr.getc()
     return ret
+
 
 def _scan_json_space(rdr):
     # Scan whitespace including "," and ":".  Strip comments for good measure.
@@ -278,6 +295,7 @@ def _scan_json_space(rdr):
             c = rdr.readline() and '\n'
         ret += c
     return ret
+
 
 def _scan_json_compound(rdr):
     # Scan a JSON array or object.
@@ -295,6 +313,7 @@ def _scan_json_compound(rdr):
         if rdr.peek() == end:
             return ret + rdr.getc()
 
+
 def scan_json(rdr):
     # Scan a JSON value.
     c = rdr.peek()
@@ -307,9 +326,11 @@ def scan_json(rdr):
         raise SyntaxError('Invalid JSON')
     return ret
 
+
 def parse_json(js):
     import json
     return json.loads(js)
+
 
 def wrap_json_error(rdr, js, e):
     import re
@@ -323,6 +344,7 @@ def wrap_json_error(rdr, js, e):
         if json_lineno == 1 and json_line1_column_bug():
             e.offset += 1
     return e
+
 
 def json_line1_column_bug():
     ret = False

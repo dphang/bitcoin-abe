@@ -19,11 +19,11 @@
 """Load blocks in different order for testing."""
 
 import sys
-import logging
 
 from . import BCDataStream, util
 
-def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
+
+def mixup_blocks(store, ds, count, datadir_chain=None, seed=None):
     bytes_done = 0
     offsets = []
 
@@ -38,11 +38,11 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
         raise IOError("End of input after %d blocks" % i)
 
     if seed > 1 and seed <= count:
-        for i in range(0, seed * int(count/seed), seed):
-            offsets[i : i + seed] = offsets[i : i + seed][::-1]
+        for i in range(0, seed * int(count / seed), seed):
+            offsets[i: i + seed] = offsets[i: i + seed][::-1]
     elif seed == -3:
-        for i in range(0, 3 * int(count/3), 3):
-            offsets[i : i + 3] = offsets[i+1 : i + 3] + [offsets[i]]
+        for i in range(0, 3 * int(count / 3), 3):
+            offsets[i: i + 3] = offsets[i + 1: i + 3] + [offsets[i]]
         print(offsets)
     elif seed:
         offsets = offsets[::-1]  # XXX want random
@@ -68,7 +68,7 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
         end = ds.read_cursor + length
 
         hash = util.double_sha256(
-            ds.input[ds.read_cursor : ds.read_cursor + 80])
+            ds.input[ds.read_cursor: ds.read_cursor + 80])
         # XXX should decode target and check hash against it to
         # avoid loading garbage data.  But not for merged-mined or
         # CPU-mined chains that use different proof-of-work
@@ -87,19 +87,19 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
             # but try to add it to the chain.
             if chain is not None:
                 b = {
-                    "block_id":   block_row[0],
-                    "height":     block_row[1],
+                    "block_id": block_row[0],
+                    "height": block_row[1],
                     "chain_work": store.binout_int(block_row[2]),
-                    "nTime":      block_row[3],
-                    "seconds":    block_row[4],
-                    "satoshis":   block_row[5],
-                    "ss":         block_row[6]}
+                    "nTime": block_row[3],
+                    "seconds": block_row[4],
+                    "satoshis": block_row[5],
+                    "ss": block_row[6]}
                 if store.selectrow("""
                     SELECT 1
                       FROM chain_candidate
                      WHERE block_id = ?
                        AND chain_id = ?""",
-                                (b['block_id'], chain.id)):
+                                   (b['block_id'], chain.id)):
                     store.log.info("block %d already in chain %d",
                                    b['block_id'], chain.id)
                     b = None
@@ -113,7 +113,7 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
             b = chain.ds_parse_block(ds)
             b["hash"] = hash
             chain_ids = frozenset([] if chain is None else [chain.id])
-            store.import_block(b, chain_ids = chain_ids)
+            store.import_block(b, chain_ids=chain_ids)
             if ds.read_cursor != end:
                 store.log.debug("Skipped %d bytes at block end",
                                 end - ds.read_cursor)
@@ -127,12 +127,13 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
     if bytes_done > 0:
         store.commit()
 
+
 def main(argv):
     conf = {
-        "count":                    200,
-        "seed":                     1,
-        "blkfile":                  None,
-        }
+        "count": 200,
+        "seed": 1,
+        "blkfile": None,
+    }
     cmdline = util.CmdLine(argv, conf)
     cmdline.usage = lambda: \
         """Usage: python -m Abe.mixup [-h] [--config=FILE] [--CONFIGVAR=VALUE]...
@@ -161,6 +162,7 @@ All configuration variables may be given as command arguments."""
     file.close()
     mixup_blocks(store, ds, int(args.count), None, int(args.seed or 0))
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

@@ -14,8 +14,9 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/agpl.html>.
 
-from .Sha256Chain import Sha256Chain
 from .NmcAuxPowChain import NmcAuxPowChain
+from .Sha256Chain import Sha256Chain
+
 
 class Sha256NmcAuxPowChain(Sha256Chain, NmcAuxPowChain):
     pass

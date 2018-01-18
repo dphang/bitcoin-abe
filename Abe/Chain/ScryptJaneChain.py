@@ -18,6 +18,7 @@ from . import BaseChain
 
 YAC_START_TIME = 1377557832
 
+
 class ScryptJaneChain(BaseChain):
     """
     A blockchain that uses Scrypt-Jane to hash block headers.

@@ -16,6 +16,7 @@
 
 from .NvcChain import NvcChain
 
+
 class NovaCoin(NvcChain):
     def __init__(chain, **kwargs):
         chain.name = 'NovaCoin'

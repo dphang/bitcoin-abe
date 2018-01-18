@@ -17,16 +17,17 @@
 
 """Upgrade to the current database schema."""
 
-import os
 import sys
+
 from . import DataStore
 from . import util
+
 
 def run_upgrades_locked(store, upgrades):
     for i in range(len(upgrades) - 1):
         vers, func = upgrades[i]
         if store.config['schema_version'] == vers:
-            sv = upgrades[i+1][0]
+            sv = upgrades[i + 1][0]
             store.log.warning("Upgrading schema to version: %s", sv)
             func(store)
             if sv[:3] == 'Abe':
@@ -43,6 +44,7 @@ def run_upgrades_locked(store, upgrades):
             store.commit()
             store.config['schema_version'] = sv
 
+
 def run_upgrades(store, upgrades):
     """Guard against concurrent upgrades."""
     lock = store.get_lock()
@@ -51,49 +53,69 @@ def run_upgrades(store, upgrades):
     finally:
         store.release_lock(lock)
 
+
 def add_block_value_in(store):
     store.sql("ALTER TABLE block ADD block_value_in NUMERIC(30)")
+
+
 def add_block_value_out(store):
     store.sql("ALTER TABLE block ADD block_value_out NUMERIC(30)")
+
+
 def add_block_total_satoshis(store):
     store.sql("ALTER TABLE block ADD block_total_satoshis NUMERIC(26)")
+
+
 def add_block_total_seconds(store):
     store.sql("ALTER TABLE block ADD block_total_seconds NUMERIC(20)")
+
+
 def add_block_satoshi_seconds(store):
     store.sql("ALTER TABLE block ADD block_satoshi_seconds NUMERIC(28)")
+
+
 def add_block_total_ss(store):
     store.sql("ALTER TABLE block ADD block_total_ss NUMERIC(28)")
+
+
 def add_satoshi_seconds_destroyed(store):
     store.sql("ALTER TABLE block_tx ADD satoshi_seconds_destroyed NUMERIC(28)")
+
+
 def add_cc_block_height(store):
     store.sql("ALTER TABLE chain_candidate ADD block_height NUMERIC(14)")
 
+
 def init_cc_block_height(store):
     store.sql(
-"""UPDATE chain_candidate cc
-    SET block_height = (
-        SELECT block_height
-          FROM block b
-         WHERE b.block_id = cc.block_id)
-""")
+        """UPDATE chain_candidate cc
+            SET block_height = (
+                SELECT block_height
+                  FROM block b
+                 WHERE b.block_id = cc.block_id)
+        """)
+
 
 def index_cc_block_height(store):
     store.sql(
-"""CREATE INDEX x_cc_chain_block_height
-    ON chain_candidate (chain_id, block_height)""")
+        """CREATE INDEX x_cc_chain_block_height
+            ON chain_candidate (chain_id, block_height)""")
+
 
 def index_cc_block(store):
     store.sql(
-"""CREATE INDEX x_cc_block ON chain_candidate (block_id)""")
+        """CREATE INDEX x_cc_block ON chain_candidate (block_id)""")
+
 
 def create_block_txin(store):
     store.sql(
-"""CREATE TABLE block_txin (
-    block_id      NUMERIC(14),
-    txin_id       NUMERIC(26),
-    out_block_id  NUMERIC(14),
-    PRIMARY KEY (block_id, txin_id)
-)""")
+        """CREATE TABLE block_txin (
+            block_id      NUMERIC(14),
+            txin_id       NUMERIC(26),
+            out_block_id  NUMERIC(14),
+            PRIMARY KEY (block_id, txin_id)
+        )""")
+
 
 def index_block_tx_tx(store):
     try:
@@ -101,6 +123,7 @@ def index_block_tx_tx(store):
     except Exception:
         store.rollback()
     store.sql("CREATE INDEX x_block_tx_tx ON block_tx (tx_id)")
+
 
 def init_block_txin(store):
     store.log.info("Initializing block_txin.")
@@ -146,6 +169,7 @@ def init_block_txin(store):
 
     store.log.info('done.')
 
+
 def init_block_value_in(store):
     store.log.info("Calculating block_value_in.")
     for row in store.selectall("""
@@ -159,6 +183,7 @@ def init_block_value_in(store):
         store.sql("UPDATE block SET block_value_in = ? WHERE block_id = ?",
                   (int(row[1] or 0), row[0]))
 
+
 def init_block_value_out(store):
     store.log.info("Calculating block_value_out.")
     for row in store.selectall("""
@@ -170,6 +195,7 @@ def init_block_value_out(store):
     """):
         store.sql("UPDATE block SET block_value_out = ? WHERE block_id = ?",
                   (int(row[1]), row[0]))
+
 
 def init_block_totals(store):
     store.log.info("Calculating block total generated and age.")
@@ -206,6 +232,7 @@ def init_block_totals(store):
                   (nTime - stats[block_id]['chain_start'],
                    stats[block_id]['satoshis'], block_id))
 
+
 def init_satoshi_seconds_destroyed(store):
     store.log.info("Calculating satoshi-seconds destroyed.")
     count = 0
@@ -241,6 +268,7 @@ def init_satoshi_seconds_destroyed(store):
         start += step
     store.log.info("done.")
 
+
 def set_0_satoshi_seconds_destroyed(store):
     store.log.info("Setting NULL to 0 in satoshi_seconds_destroyed.")
     # XXX store.conn and store.sql_transform no longer exist.
@@ -255,6 +283,7 @@ def set_0_satoshi_seconds_destroyed(store):
         store.sql("""
             UPDATE block_tx bt SET satoshi_seconds_destroyed = 0
              WHERE block_id = ? AND tx_id = ?""", row)
+
 
 def init_block_satoshi_seconds(store, ):
     store.log.info("Calculating satoshi-seconds.")
@@ -311,9 +340,11 @@ def init_block_satoshi_seconds(store, ):
     if count % 1000 != 0:
         store.log.info("Updated %d blocks", count)
 
+
 def index_block_nTime(store):
     store.log.info("Indexing block_nTime.")
     store.sql("CREATE INDEX x_block_nTime ON block (block_nTime)")
+
 
 def replace_chain_summary(store):
     store.sql("DROP VIEW chain_summary")
@@ -344,6 +375,7 @@ def replace_chain_summary(store):
         JOIN block b ON (cc.block_id = b.block_id)
         LEFT JOIN block prev ON (b.prev_block_id = prev.block_id)""")
 
+
 def drop_block_ss_columns(store):
     """Drop columns that may have been added in error."""
     for c in ['created', 'destroyed']:
@@ -351,6 +383,7 @@ def drop_block_ss_columns(store):
             store.sql("ALTER TABLE block DROP COLUMN block_ss_" + c)
         except Exception:
             store.rollback()
+
 
 def add_constraint(store, table, name, constraint):
     try:
@@ -362,24 +395,30 @@ def add_constraint(store, table, name, constraint):
             constraint + "; ignoring error.")
         store.rollback()
 
+
 def add_fk_block_txin_block_id(store):
     add_constraint(store, "block_txin", "fk1_block_txin",
                    "FOREIGN KEY (block_id) REFERENCES block (block_id)")
+
 
 def add_fk_block_txin_tx_id(store):
     add_constraint(store, "block_txin", "fk2_block_txin",
                    "FOREIGN KEY (txin_id) REFERENCES txin (txin_id)")
 
+
 def add_fk_block_txin_out_block_id(store):
     add_constraint(store, "block_txin", "fk3_block_txin",
                    "FOREIGN KEY (out_block_id) REFERENCES block (block_id)")
+
 
 def add_chk_block_txin_out_block_id_nn(store):
     add_constraint(store, "block_txin", "chk3_block_txin",
                    "CHECK (out_block_id IS NOT NULL)")
 
+
 def create_x_cc_block_id(store):
     store.sql("CREATE INDEX x_cc_block_id ON chain_candidate (block_id)")
+
 
 def reverse_binary_hashes(store):
     if store.config['binary_type'] != 'hex':
@@ -391,13 +430,16 @@ def reverse_binary_hashes(store):
             ' then issue "UPDATE config SET schema_version = \'9.1\'" and'
             ' rerun this program.')
 
+
 def drop_x_cc_block_id(store):
     """Redundant with x_cc_block"""
     store.sql("DROP INDEX x_cc_block_id")
 
+
 def create_x_cc_block_height(store):
     store.sql(
         "CREATE INDEX x_cc_block_height ON chain_candidate (block_height)")
+
 
 def create_txout_approx(store):
     store.sql("""
@@ -407,9 +449,11 @@ def create_txout_approx(store):
             txout_value txout_approx_value
           FROM txout""")
 
+
 def add_fk_chain_candidate_block_id(store):
     add_constraint(store, "chain_candidate", "fk1_chain_candidate",
                    "FOREIGN KEY (block_id) REFERENCES block (block_id)")
+
 
 def create_configvar(store):
     store.sql("""
@@ -418,11 +462,13 @@ def create_configvar(store):
             configvar_value VARCHAR(255)
         )""")
 
+
 def configure(store):
     # XXX This won't work anymore.
     store.args.binary_type = store.config['binary_type']
     store.configure()
     store.save_config()
+
 
 def populate_abe_sequences(store):
     if store.config['sql.sequence_type'] == 'update':
@@ -445,11 +491,14 @@ def populate_abe_sequences(store):
                 store.sql("INSERT INTO abe_sequences (key, nextid)"
                           " VALUES (?, ?)", (t, last_id + 1))
 
+
 def add_datadir_chain_id(store):
     store.sql("ALTER TABLE datadir ADD chain_id NUMERIC(10) NULL")
 
+
 def noop(store):
     pass
+
 
 def rescan_if_missed_blocks(store):
     """
@@ -465,6 +514,7 @@ def rescan_if_missed_blocks(store):
     if bad > 0:
         store.sql(
             "UPDATE datadir SET blkfile_number = 1, blkfile_offset = 0")
+
 
 def insert_missed_blocks(store):
     """
@@ -499,6 +549,7 @@ def insert_missed_blocks(store):
         inserted += store.rowcount()
         store.commit()  # XXX not sure why PostgreSQL needs this.
     store.log.info("Inserted %d rows into chain_candidate.", inserted)
+
 
 def repair_missed_blocks(store):
     store.log.info("Finding longest chains.")
@@ -571,11 +622,14 @@ def repair_missed_blocks(store):
         store.log.info("Processed %d in chain %d", count, chain_id)
     store.log.info("Repair successful.")
 
+
 def add_block_num_tx(store):
     store.sql("ALTER TABLE block ADD block_num_tx NUMERIC(10)")
 
+
 def add_block_ss_destroyed(store):
     store.sql("ALTER TABLE block ADD block_ss_destroyed NUMERIC(28)")
+
 
 def init_block_tx_sums(store):
     store.log.info("Calculating block_num_tx and block_ss_destroyed.")
@@ -602,17 +656,20 @@ def init_block_tx_sums(store):
         count += 1
         if count % 1000 == 0:
             store.commit()
-    # XXX would like to set NOT NULL on block_num_tx.
+            # XXX would like to set NOT NULL on block_num_tx.
+
 
 def config_ddl(store):
     # XXX This won't work anymore.
     store.configure_ddl_implicit_commit()
     store.save_configvar("ddl_implicit_commit")
 
+
 def config_create_table_epilogue(store):
     # XXX This won't work anymore.
     store.configure_create_table_epilogue()
     store.save_configvar("create_table_epilogue")
+
 
 def rename_abe_sequences_key(store):
     """Drop and recreate abe_sequences with key renamed to sequence_key."""
@@ -634,12 +691,15 @@ def rename_abe_sequences_key(store):
         store.sql("INSERT INTO abe_sequences (sequence_key, nextid)"
                   " VALUES (?, ?)", row)
 
+
 def create_x_txin_txout(store):
     store.sql("CREATE INDEX x_txin_txout ON txin (txout_id)")
+
 
 def save_datadir(store):
     """Copy the datadir table to recreate it with a new column."""
     store.sql("CREATE TABLE abe_tmp_datadir AS SELECT * FROM datadir")
+
 
 def add_datadir_id(store):
     data = store.selectall("""
@@ -666,8 +726,10 @@ def add_datadir_id(store):
                 datadir_id, dirname, blkfile_number, blkfile_offset, chain_id
             ) VALUES (?, ?, ?, ?, ?)""", new_row)
 
+
 def drop_tmp_datadir(store):
     store.ddl("DROP TABLE abe_tmp_datadir")
+
 
 def config_clob(store):
     # This won't work anymore.
@@ -675,6 +737,7 @@ def config_clob(store):
     store.save_configvar("max_varchar")
     store.configure_clob_type()
     store.save_configvar("clob_type")
+
 
 def clear_bad_addresses(store):
     """Set address=Unknown for the bogus outputs in Bitcoin 71036."""
@@ -693,6 +756,7 @@ def clear_bad_addresses(store):
                       (row[0],))
             if store.rowcount():
                 store.log.info("Cleared txout %s", tx_hash)
+
 
 def find_namecoin_addresses(store):
     updated = 0
@@ -715,14 +779,17 @@ def find_namecoin_addresses(store):
         store.commit()
         store.log.info("Found %d addresses", updated)
 
+
 def create_abe_lock(store):
     store.ddl("""CREATE TABLE abe_lock (
         lock_id       NUMERIC(10) NOT NULL PRIMARY KEY,
         pid           VARCHAR(255) NULL
     )""")
 
+
 def create_abe_lock_row(store):
     store.sql("INSERT INTO abe_lock (lock_id) VALUES (1)")
+
 
 def insert_null_pubkey(store):
     dbnull = store.binin(DataStore.NULL_PUBKEY_HASH)
@@ -746,6 +813,7 @@ def insert_null_pubkey(store):
             INSERT INTO pubkey (pubkey_id, pubkey_hash) VALUES (?, ?)""",
                   (DataStore.NULL_PUBKEY_ID, dbnull))
 
+
 def set_netfee_pubkey_id(store):
     store.log.info("Updating network fee output address to 'Destroyed'...")
     # XXX This doesn't work for Oracle because of LOB weirdness.
@@ -761,6 +829,7 @@ def set_netfee_pubkey_id(store):
               (DataStore.NULL_PUBKEY_ID,
                store.binin(DataStore.SCRIPT_NETWORK_FEE)))
     store.log.info("...rows updated: %d", store.rowcount())
+
 
 def adjust_block_total_satoshis(store):
     store.log.info("Adjusting value outstanding for lost coins.")
@@ -809,15 +878,18 @@ def adjust_block_total_satoshis(store):
     if count % 1000 != 0:
         store.log.info("Adjusted %d of %d blocks.", count, len(block_ids))
 
+
 def config_concat_style(store):
     store._sql.configure_concat_style()
     store.config['sql.concat_style'] = store._sql.config['concat_style']
     store.save_configvar("sql.concat_style")
 
+
 def config_limit_style(store):
     # XXX This won't work anymore.
     store.configure_limit_style()
     store.save_configvar("limit_style")
+
 
 def config_sequence_type(store):
     # XXX This won't work anymore.
@@ -832,9 +904,11 @@ def config_sequence_type(store):
             store.create_sequence(name)
     store.save_configvar("sequence_type")
 
+
 def add_search_block_id(store):
     store.log.info("Creating block.search_block_id")
     store.sql("ALTER TABLE block ADD search_block_id NUMERIC(14) NULL")
+
 
 def populate_search_block_id(store):
     store.log.info("Calculating block.search_block_id")
@@ -857,9 +931,11 @@ def populate_search_block_id(store):
         store.cache_block(int(block_id), height, prev_id, search_id)
     store.commit()
 
+
 def add_fk_search_block_id(store):
     add_constraint(store, "block", "fk1_search_block_id",
                    "FOREIGN KEY (search_block_id) REFERENCES block (block_id)")
+
 
 def create_firstbits(store):
     flag = store.config.get('use_firstbits')
@@ -878,17 +954,21 @@ def create_firstbits(store):
         from . import firstbits
         firstbits.create_firstbits(store)
 
+
 def populate_firstbits(store):
     if store.config['use_firstbits'] == "true":
         from . import firstbits
         firstbits.populate_firstbits(store)
 
+
 def add_keep_scriptsig(store):
     store.config['keep_scriptsig'] = "true"
     store.save_configvar("keep_scriptsig")
 
+
 def drop_satoshi_seconds_destroyed(store):
     store.get_db().drop_column_if_exists("block_txin", "satoshi_seconds_destroyed")
+
 
 def widen_blkfile_number(store):
     data = store.selectall("""
@@ -909,17 +989,22 @@ def widen_blkfile_number(store):
                 datadir_id, dirname, blkfile_number, blkfile_offset, chain_id
             ) VALUES (?, ?, ?, ?, ?)""", row)
 
+
 def add_datadir_loader(store):
     store.sql("ALTER TABLE datadir ADD datadir_loader VARCHAR(100) NULL")
+
 
 def add_chain_policy(store):
     store.ddl("ALTER TABLE chain ADD chain_policy VARCHAR(255)")
 
+
 def populate_chain_policy(store):
     store.sql("UPDATE chain SET chain_policy = chain_name")
 
+
 def add_chain_magic(store):
     store.ddl("ALTER TABLE chain ADD chain_magic BINARY(4)")
+
 
 def populate_chain_magic(store):
     for chain_id, magic in store.selectall("""
@@ -928,6 +1013,7 @@ def populate_chain_magic(store):
           JOIN magic ON (chain.magic_id = magic.magic_id)"""):
         store.sql("UPDATE chain SET chain_magic = ? WHERE chain_id = ?",
                   (magic, chain_id))
+
 
 def drop_policy(store):
     for stmt in [
@@ -938,6 +1024,7 @@ def drop_policy(store):
         except store.dbmodule.DatabaseError as e:
             store.log.warning("Cleanup failed, ignoring: %s", stmt)
 
+
 def drop_magic(store):
     for stmt in [
         "ALTER TABLE chain DROP COLUMN magic_id",
@@ -947,8 +1034,10 @@ def drop_magic(store):
         except store.dbmodule.DatabaseError as e:
             store.log.warning("Cleanup failed, ignoring: %s", stmt)
 
+
 def add_chain_decimals(store):
     store.ddl("ALTER TABLE chain ADD chain_decimals NUMERIC(2)")
+
 
 def insert_chain_novacoin(store):
     from . import Chain
@@ -956,6 +1045,7 @@ def insert_chain_novacoin(store):
         store.insert_chain(Chain.create("NovaCoin"))
     except Exception:
         pass
+
 
 def txin_detail_multisig(store):
     store.get_db().drop_view_if_exists('txin_detail')
@@ -993,15 +1083,19 @@ def txin_detail_multisig(store):
           LEFT JOIN pubkey
               ON (prevout.pubkey_id = pubkey.pubkey_id)""")
 
+
 def add_chain_script_addr_vers(store):
     store.ddl("ALTER TABLE chain ADD chain_script_addr_vers VARBINARY(100) NULL")
+
 
 def populate_chain_script_addr_vers(store):
     def update(addr_vers, script_vers):
         store.sql("UPDATE chain SET chain_script_addr_vers=? WHERE chain_address_version=?",
                   (store.binin(script_vers), store.binin(addr_vers)))
+
     update('\x00', '\x05')
     update('\x6f', '\xc4')
+
 
 def create_multisig_pubkey(store):
     store.ddl("""
@@ -1013,8 +1107,10 @@ def create_multisig_pubkey(store):
             FOREIGN KEY (pubkey_id) REFERENCES pubkey (pubkey_id)
         )""")
 
+
 def create_x_multisig_pubkey_multisig(store):
     store.ddl("CREATE INDEX x_multisig_pubkey_pubkey ON multisig_pubkey (pubkey_id)")
+
 
 def update_chain_policy(store):
     store.sql("""
@@ -1022,6 +1118,7 @@ def update_chain_policy(store):
            SET chain_policy = 'Sha256Chain'
          WHERE chain_policy = chain_name
            AND chain_name IN ('Weeds', 'BeerTokens', 'SolidCoin', 'ScTestnet', 'Worldcoin', 'Anoncoin')""")
+
 
 def populate_multisig_pubkey(store):
     store.init_chains()
@@ -1043,10 +1140,12 @@ def populate_multisig_pubkey(store):
     store.commit()
     store.log.info("Found %d", count)
 
+
 sql_arg_names = (
     'binary_type', 'max_varchar', 'ddl_implicit_commit',
     'create_table_epilogue', 'sequence_type', 'limit_style',
     'int_type', 'clob_type')
+
 
 def abstract_sql(store):
     for name in sql_arg_names:
@@ -1055,6 +1154,7 @@ def abstract_sql(store):
                SET configvar_name = ?
              WHERE configvar_name = ?""", ('sql.' + name, name))
     store.commit()
+
 
 def add_unlinked_tx(store):
     store.ddl("""
@@ -1065,6 +1165,7 @@ def add_unlinked_tx(store):
                 REFERENCES tx (tx_id)
         )""")
 
+
 def cleanup_unlinked_tx(store):
     txcount = 0
     for tx_id in store.selectall("""
@@ -1073,24 +1174,24 @@ def cleanup_unlinked_tx(store):
             LEFT JOIN block_tx bt ON (t.tx_id = bt.tx_id)
             WHERE bt.tx_id IS NULL
         """):
-
         store._clean_unlinked_tx(tx_id)
         txcount += 1
 
     store.commit()
     store.log.info("Cleaned up %d unlinked transactions", txcount)
 
+
 upgrades = [
-    ('6',    add_block_value_in),
-    ('6.1',  add_block_value_out),
-    ('6.2',  add_block_total_satoshis),
-    ('6.3',  add_block_total_seconds),
-    ('6.4',  add_block_satoshi_seconds),
-    ('6.5',  add_block_total_ss),
-    ('6.6',  add_satoshi_seconds_destroyed),
-    ('6.7',  add_cc_block_height),
-    ('6.8',  init_cc_block_height),
-    ('6.9',  index_cc_block_height),
+    ('6', add_block_value_in),
+    ('6.1', add_block_value_out),
+    ('6.2', add_block_total_satoshis),
+    ('6.3', add_block_total_seconds),
+    ('6.4', add_block_satoshi_seconds),
+    ('6.5', add_block_total_ss),
+    ('6.6', add_satoshi_seconds_destroyed),
+    ('6.7', add_cc_block_height),
+    ('6.8', init_cc_block_height),
+    ('6.9', index_cc_block_height),
     ('6.10', index_cc_block),
     ('6.11', create_block_txin),
     ('6.12', index_block_tx_tx),
@@ -1103,87 +1204,88 @@ upgrades = [
     ('6.19', noop),
     ('6.20', index_block_nTime),
     ('6.21', replace_chain_summary),
-    ('7',    replace_chain_summary),
-    ('7.1',  index_block_tx_tx),  # forgot to put in abe.py
-    ('7.2',  init_block_txin),    # abe.py put bad data there.
-    ('7.3',  init_satoshi_seconds_destroyed),
-    ('7.4',  set_0_satoshi_seconds_destroyed),
-    ('7.5',  noop),
-    ('7.6',  drop_block_ss_columns),
-    ('8',    add_fk_block_txin_block_id),
-    ('8.1',  add_fk_block_txin_tx_id),
-    ('8.2',  add_fk_block_txin_out_block_id),
-    ('8.3',  add_chk_block_txin_out_block_id_nn),
-    ('8.4',  create_x_cc_block_id),
-    ('9',    reverse_binary_hashes),
-    ('9.1',  drop_x_cc_block_id),
-    ('9.2',  create_x_cc_block_height),
-    ('10',   create_txout_approx),
-    ('11',   add_fk_chain_candidate_block_id),
-    ('12',   create_configvar),
+    ('7', replace_chain_summary),
+    ('7.1', index_block_tx_tx),  # forgot to put in abe.py
+    ('7.2', init_block_txin),  # abe.py put bad data there.
+    ('7.3', init_satoshi_seconds_destroyed),
+    ('7.4', set_0_satoshi_seconds_destroyed),
+    ('7.5', noop),
+    ('7.6', drop_block_ss_columns),
+    ('8', add_fk_block_txin_block_id),
+    ('8.1', add_fk_block_txin_tx_id),
+    ('8.2', add_fk_block_txin_out_block_id),
+    ('8.3', add_chk_block_txin_out_block_id_nn),
+    ('8.4', create_x_cc_block_id),
+    ('9', reverse_binary_hashes),
+    ('9.1', drop_x_cc_block_id),
+    ('9.2', create_x_cc_block_height),
+    ('10', create_txout_approx),
+    ('11', add_fk_chain_candidate_block_id),
+    ('12', create_configvar),
     ('12.1', configure),
     ('Abe13', populate_abe_sequences),
     ('Abe14', add_datadir_chain_id),
     ('Abe15', noop),
     ('Abe16', rescan_if_missed_blocks),  # May be slow.
-    ('Abe17',   insert_missed_blocks),
+    ('Abe17', insert_missed_blocks),
     ('Abe17.1', repair_missed_blocks),
-    ('Abe18',   add_block_num_tx),       # Seconds
-    ('Abe18.1', add_block_ss_destroyed), # Seconds
-    ('Abe18.2', init_block_tx_sums),     # 5 minutes
+    ('Abe18', add_block_num_tx),  # Seconds
+    ('Abe18.1', add_block_ss_destroyed),  # Seconds
+    ('Abe18.2', init_block_tx_sums),  # 5 minutes
     ('Abe18.3', replace_chain_summary),  # Fast
-    ('Abe19',   config_ddl),             # Fast
-    ('Abe20',   config_create_table_epilogue), # Fast
-    ('Abe20.1', rename_abe_sequences_key), # Fast
-    ('Abe21',   create_x_txin_txout),    # 25 seconds
-    ('Abe22',   save_datadir),           # Fast
-    ('Abe22.1', add_datadir_id),         # Fast
-    ('Abe22.2', drop_tmp_datadir),       # Fast
-    ('Abe23',   config_clob),            # Fast
-    ('Abe24',   clear_bad_addresses),    # Fast
-    ('Abe24.1', find_namecoin_addresses), # 2 minutes if you have Namecoin
-    ('Abe25',   create_abe_lock),        # Fast
-    ('Abe25.1', create_abe_lock_row),    # Fast
-    ('Abe25.2', insert_null_pubkey),     # 1 second
-    ('Abe25.3', set_netfee_pubkey_id),   # Seconds
-    ('Abe26',   adjust_block_total_satoshis), # 1-3 minutes
-    ('Abe26.1', init_block_satoshi_seconds), # 3-10 minutes
-    ('Abe27',   config_limit_style),     # Fast
-    ('Abe28',   config_sequence_type),   # Fast
+    ('Abe19', config_ddl),  # Fast
+    ('Abe20', config_create_table_epilogue),  # Fast
+    ('Abe20.1', rename_abe_sequences_key),  # Fast
+    ('Abe21', create_x_txin_txout),  # 25 seconds
+    ('Abe22', save_datadir),  # Fast
+    ('Abe22.1', add_datadir_id),  # Fast
+    ('Abe22.2', drop_tmp_datadir),  # Fast
+    ('Abe23', config_clob),  # Fast
+    ('Abe24', clear_bad_addresses),  # Fast
+    ('Abe24.1', find_namecoin_addresses),  # 2 minutes if you have Namecoin
+    ('Abe25', create_abe_lock),  # Fast
+    ('Abe25.1', create_abe_lock_row),  # Fast
+    ('Abe25.2', insert_null_pubkey),  # 1 second
+    ('Abe25.3', set_netfee_pubkey_id),  # Seconds
+    ('Abe26', adjust_block_total_satoshis),  # 1-3 minutes
+    ('Abe26.1', init_block_satoshi_seconds),  # 3-10 minutes
+    ('Abe27', config_limit_style),  # Fast
+    ('Abe28', config_sequence_type),  # Fast
     # Should be okay back to here.
-    ('Abe29',   add_search_block_id),    # Seconds
-    ('Abe29.1', populate_search_block_id), # 1-2 minutes if using firstbits
-    ('Abe29.2', add_fk_search_block_id), # Seconds
-    ('Abe29.3', create_firstbits),       # Fast
-    ('Abe29.4', populate_firstbits),     # Slow if config use_firstbits=true
-    ('Abe30',   add_keep_scriptsig),     # Fast
-    ('Abe31',   drop_satoshi_seconds_destroyed), # Seconds
-    ('Abe32',   save_datadir),           # Fast
-    ('Abe32.1', widen_blkfile_number),   # Fast
-    ('Abe32.2', drop_tmp_datadir),       # Fast
-    ('Abe33',   add_datadir_loader),     # Fast
-    ('Abe34',   noop),                   # Fast
-    ('Abe35',   add_chain_policy),       # Fast
+    ('Abe29', add_search_block_id),  # Seconds
+    ('Abe29.1', populate_search_block_id),  # 1-2 minutes if using firstbits
+    ('Abe29.2', add_fk_search_block_id),  # Seconds
+    ('Abe29.3', create_firstbits),  # Fast
+    ('Abe29.4', populate_firstbits),  # Slow if config use_firstbits=true
+    ('Abe30', add_keep_scriptsig),  # Fast
+    ('Abe31', drop_satoshi_seconds_destroyed),  # Seconds
+    ('Abe32', save_datadir),  # Fast
+    ('Abe32.1', widen_blkfile_number),  # Fast
+    ('Abe32.2', drop_tmp_datadir),  # Fast
+    ('Abe33', add_datadir_loader),  # Fast
+    ('Abe34', noop),  # Fast
+    ('Abe35', add_chain_policy),  # Fast
     ('Abe35.1', populate_chain_policy),  # Fast
-    ('Abe35.2', add_chain_magic),        # Fast
-    ('Abe35.3', populate_chain_magic),   # Fast
-    ('Abe35.4', drop_policy),            # Fast
-    ('Abe35.5', drop_magic),             # Fast
-    ('Abe36',   add_chain_decimals),     # Fast
+    ('Abe35.2', add_chain_magic),  # Fast
+    ('Abe35.3', populate_chain_magic),  # Fast
+    ('Abe35.4', drop_policy),  # Fast
+    ('Abe35.5', drop_magic),  # Fast
+    ('Abe36', add_chain_decimals),  # Fast
     ('Abe36.1', insert_chain_novacoin),  # Fast
-    ('Abe37',   txin_detail_multisig),   # Fast
-    ('Abe37.1', add_chain_script_addr_vers), # Fast
-    ('Abe37.2', populate_chain_script_addr_vers), # Fast
-    ('Abe37.3', create_multisig_pubkey), # Fast
-    ('Abe37.4', create_x_multisig_pubkey_multisig), # Fast
-    ('Abe37.5', update_chain_policy),    # Fast
-    ('Abe37.6', populate_multisig_pubkey), # Minutes-hours
-    ('Abe38',   abstract_sql),           # Fast
-    ('Abe39',   config_concat_style),    # Fast
-    ('Abe40',   add_unlinked_tx),        # Fast
-    ('Abe40.1', cleanup_unlinked_tx),    # Hours, could be done offline
+    ('Abe37', txin_detail_multisig),  # Fast
+    ('Abe37.1', add_chain_script_addr_vers),  # Fast
+    ('Abe37.2', populate_chain_script_addr_vers),  # Fast
+    ('Abe37.3', create_multisig_pubkey),  # Fast
+    ('Abe37.4', create_x_multisig_pubkey_multisig),  # Fast
+    ('Abe37.5', update_chain_policy),  # Fast
+    ('Abe37.6', populate_multisig_pubkey),  # Minutes-hours
+    ('Abe38', abstract_sql),  # Fast
+    ('Abe39', config_concat_style),  # Fast
+    ('Abe40', add_unlinked_tx),  # Fast
+    ('Abe40.1', cleanup_unlinked_tx),  # Hours, could be done offline
     ('Abe41', None)
 ]
+
 
 def upgrade_schema(store):
     if 'sql.binary_type' not in store.config:
@@ -1199,6 +1301,7 @@ def upgrade_schema(store):
         raise Exception('Can not upgrade from schema version %s to %s\n'
                         % (sv, curr))
     store.log.warning("Upgrade complete.")
+
 
 if __name__ == '__main__':
     print("Run Abe with --upgrade added to the usual arguments.")

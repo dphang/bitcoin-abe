@@ -16,10 +16,12 @@
 
 from . import BaseChain
 
+
 class LtcScryptChain(BaseChain):
     """
     A blockchain using Litecoin's scrypt algorithm to hash block headers.
     """
+
     def block_header_hash(chain, header):
         import ltc_scrypt
         return ltc_scrypt.getPoWHash(header)

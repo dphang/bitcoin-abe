@@ -20,17 +20,21 @@ td, th {
     margin: 0;
     padding: 0 1ex;
 }
+
 td {
     border-width: 1px;
     border-style: solid;
 }
+
 table {
     border-spacing: 0;
 }
+
 .shortlink {
     font-size: smaller;
 }
+
 .addrhist .escrow .balance {
     opacity: 0.5; /* standard */
-    filter: alpha(opacity = 50); /* MSIE */
+    filter: alpha(opacity=50); /* MSIE */
 }

@@ -16,6 +16,7 @@
 
 from . import BaseChain
 
+
 class X11Chain(BaseChain):
     """
     A blockchain that hashes block headers using the X11 algorithm.
