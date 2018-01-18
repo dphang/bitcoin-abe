@@ -36,7 +36,7 @@ class Namecoin(Sha256NmcAuxPowChain):
         pushed = 0
 
         # Tolerate (but ignore for now) name operations.
-        for i in xrange(len(decoded)):
+        for i in range(len(decoded)):
             opcode = decoded[i][0]
 
             if decoded[i][1] is not None or \

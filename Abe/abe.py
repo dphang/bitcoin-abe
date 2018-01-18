@@ -28,14 +28,14 @@ import math
 import logging
 import json
 
-import version
-import DataStore
-import readconf
+from . import version
+from . import DataStore
+from . import readconf
 
 # bitcointools -- modified deserialize.py to return raw transaction
-import deserialize
-import util  # Added functions.
-import base58
+from . import deserialize
+from . import util  # Added functions.
+from . import base58
 
 __version__ = version.__version__
 
@@ -209,7 +209,7 @@ class Abe:
             abe.shortlink_type = 10
 
     def __call__(abe, env, start_response):
-        import urlparse
+        import urllib.parse
 
         page = {
             "status": '200 OK',
@@ -224,7 +224,7 @@ class Abe:
             "chain": None,
             }
         if 'QUERY_STRING' in env:
-            page['params'] = urlparse.parse_qs(env['QUERY_STRING'])
+            page['params'] = urllib.parse.parse_qs(env['QUERY_STRING'])
 
         if abe.fix_path_info(env):
             abe.log.debug("fixed path_info")
@@ -253,7 +253,7 @@ class Abe:
             page['body'] = ['<p class="error">Sorry, ', env['SCRIPT_NAME'],
                             env['PATH_INFO'],
                             ' does not exist on this server.</p>']
-        except NoSuchChainError, e:
+        except NoSuchChainError as e:
             page['body'] += [
                 '<p class="error">'
                 'Sorry, I don\'t know about that chain!</p>\n']
@@ -279,7 +279,7 @@ class Abe:
                 ' <a href="' + page['dotdot'] + 'download">Source</a>')
 
         content = page['template'] % tvars
-        if isinstance(content, unicode):
+        if isinstance(content, str):
             content = content.encode('UTF-8')
         return [content]
 
@@ -982,14 +982,14 @@ class Abe:
                 'uri': 'block/' + hexhash,
                 }
 
-        return map(process, abe.store.selectall("""
+        return list(map(process, abe.store.selectall("""
             SELECT c.chain_name, b.block_hash, cc.in_longest
               FROM chain c
               JOIN chain_candidate cc ON (cc.chain_id = c.chain_id)
               JOIN block b ON (b.block_id = cc.block_id)
              WHERE cc.block_height = ?
              ORDER BY c.chain_name, cc.in_longest DESC
-        """, (n,)))
+        """, (n,))))
 
     def search_hash_prefix(abe, q, types = ('tx', 'block', 'pubkey')):
         q = q.lower()
@@ -1018,11 +1018,11 @@ class Abe:
                 lo = abe.store.hashin_hex(q + '0' * (64 - len(q)))
                 hi = abe.store.hashin_hex(q + 'f' * (64 - len(q)))
 
-            ret += map(process, abe.store.selectall(
+            ret += list(map(process, abe.store.selectall(
                 "SELECT " + t + "_hash FROM " + t + " WHERE " + t +
                 # XXX hardcoded limit.
                 "_hash BETWEEN ? AND ? LIMIT 100",
-                (lo, hi)))
+                (lo, hi))))
         return ret
 
     def _found_address(abe, address):
@@ -1087,10 +1087,10 @@ class Abe:
                 hl, hh = hh, hl
             bl = abe.store.binin(hl)
             bh = abe.store.binin(hh)
-            ret += filter(None, map(process, abe.store.selectall(
+            ret += [_f for _f in map(process, abe.store.selectall(
                 "SELECT pubkey_hash FROM pubkey WHERE pubkey_hash" +
                 # XXX hardcoded limit.
-                neg + " BETWEEN ? AND ? LIMIT 100", (bl, bh))))
+                neg + " BETWEEN ? AND ? LIMIT 100", (bl, bh))) if _f]
             l -= 1
             al = al[:-1]
             ah = ah[:-1]
@@ -1104,12 +1104,12 @@ class Abe:
             (name, code3) = row
             return { 'name': name + ' (' + code3 + ')',
                      'uri': 'chain/' + str(name) }
-        ret = map(process, abe.store.selectall("""
+        ret = list(map(process, abe.store.selectall("""
             SELECT chain_name, chain_code3
               FROM chain
              WHERE UPPER(chain_name) LIKE '%' || ? || '%'
                 OR UPPER(chain_code3) LIKE '%' || ? || '%'
-        """, (q.upper(), q.upper())))
+        """, (q.upper(), q.upper()))))
         return ret
 
     def handle_t(abe, page):
@@ -1147,11 +1147,11 @@ class Abe:
     def handle_a(abe, page):
         arg = wsgiref.util.shift_path_info(page['env'])
         if abe.shortlink_type == "firstbits":
-            addrs = map(
+            addrs = list(map(
                 abe._found_address,
                 abe.store.firstbits_to_addresses(
                     arg.lower(),
-                    chain_id = page['chain'] and page['chain'].id))
+                    chain_id = page['chain'] and page['chain'].id)))
         else:
             addrs = abe.search_address_prefix(arg)
         abe.show_search_results(page, addrs)
@@ -1693,7 +1693,7 @@ class Abe:
         if name is None:
             name = re.sub(r'\W+', '-', ABE_APPNAME.lower()) + '-' + ABE_VERSION
         fileobj = lambda: None
-        fileobj.func_dict['write'] = page['start_response'](
+        fileobj.__dict__['write'] = page['start_response'](
             '200 OK',
             [('Content-type', 'application/x-gtar-compressed'),
              ('Content-disposition', 'filename=' + name + '.tar.gz')])
@@ -1829,7 +1829,7 @@ def decode_script(script):
         return ''
     try:
         return deserialize.decode_script(script)
-    except KeyError, e:
+    except KeyError as e:
         return 'Nonstandard script'
 
 def b58hex(b58):
@@ -1866,7 +1866,7 @@ def flatten(l):
         return ''.join(map(flatten, l))
     if l is None:
         raise Exception('NoneType in HTML conversion')
-    if isinstance(l, unicode):
+    if isinstance(l, str):
         return l
     return str(l)
 
@@ -1892,13 +1892,13 @@ def serve(store):
     if args.query is not None:
         def start_response(status, headers):
             pass
-        import urlparse
-        parsed = urlparse.urlparse(args.query)
-        print abe({
+        import urllib.parse
+        parsed = urllib.parse.urlparse(args.query)
+        print(abe({
                 'SCRIPT_NAME':  '',
                 'PATH_INFO':    parsed.path,
                 'QUERY_STRING': parsed.query
-                }, start_response)
+                }, start_response))
     elif args.host or args.port:
         # HTTP server.
         if args.host is None:
@@ -1941,7 +1941,7 @@ def process_is_alive(pid):
     try:
         os.kill(pid, 0)
         return True
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EPERM:
             return True  # process exists, but we can't send it signals.
         if e.errno == errno.ESRCH:
@@ -1950,7 +1950,7 @@ def process_is_alive(pid):
 
 def list_policies():
     import pkgutil
-    import Chain
+    from . import Chain
     policies = []
     for _, name, ispkg in pkgutil.iter_modules(path=[os.path.dirname(Chain.__file__)]):
         if not ispkg:
@@ -1959,14 +1959,14 @@ def list_policies():
 
 def show_policy(policy):
     import inspect
-    import Chain
+    from . import Chain
     try:
         chain = Chain.create(policy)
     except ImportError as e:
-        print("%s: policy unavailable (%s)" % (policy, e.message))
+        print(("%s: policy unavailable (%s)" % (policy, e.message)))
         return
 
-    print("%s:" % policy)
+    print(("%s:" % policy))
 
     parents = []
     for cls in type(chain).__mro__[1:]:
@@ -1976,7 +1976,7 @@ def show_policy(policy):
     if parents:
         print("  Inherits from:")
         for cls in parents:
-            print("    %s" % cls.__name__)
+            print(("    %s" % cls.__name__))
 
     params = []
     for attr in chain.POLICY_ATTRS:
@@ -1992,16 +1992,16 @@ def show_policy(policy):
                 except UnicodeError:
                     if type(val) == bytes:
                         # The value could be a magic number or address version.
-                        val = json.dumps(unicode(val, 'latin_1'))
+                        val = json.dumps(str(val, 'latin_1'))
                     else:
                         val = repr(val)
             except TypeError as e:
                 val = repr(val)
-            print("    %s: %s" % (attr, val))
+            print(("    %s: %s" % (attr, val)))
 
     doc = inspect.getdoc(chain)
     if doc is not None:
-        print("  %s" % doc.replace('\n', '\n  '))
+        print(("  %s" % doc.replace('\n', '\n  ')))
 
 def create_conf():
     conf = {
@@ -2047,7 +2047,7 @@ def main(argv):
     elif argv[0] == '--list-policies':
         print("Available chain policies:")
         for name in list_policies():
-            print("  %s" % name)
+            print(("  %s" % name))
         return 0
 
     args, argv = readconf.parse_argv(argv, create_conf())
@@ -2071,11 +2071,11 @@ All configuration variables may be given as command arguments.
 See abe.conf for commented examples.""")
         return 0
     elif argv[0] in ('-v', '--version'):
-        print ABE_APPNAME, ABE_VERSION
-        print "Schema version", DataStore.SCHEMA_VERSION
+        print(ABE_APPNAME, ABE_VERSION)
+        print("Schema version", DataStore.SCHEMA_VERSION)
         return 0
     elif argv[0] == '--print-htdocs-directory':
-        print find_htdocs()
+        print(find_htdocs())
         return 0
     else:
         sys.stderr.write(

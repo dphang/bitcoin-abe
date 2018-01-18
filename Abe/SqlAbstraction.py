@@ -256,11 +256,11 @@ class SqlAbstraction(object):
                 enc = 'UTF-8'
                 def to_utf8(obj):
                     if isinstance(obj, dict):
-                        for k in obj.keys():
+                        for k in list(obj.keys()):
                             obj[k] = to_utf8(obj[k])
                     if isinstance(obj, list):
-                        return map(to_utf8, obj)
-                    if isinstance(obj, unicode):
+                        return list(map(to_utf8, obj))
+                    if isinstance(obj, str):
                         return obj.encode(enc)
                     return obj
                 conn = sql._connect(to_utf8(cargs))
@@ -422,7 +422,7 @@ class SqlAbstraction(object):
                 else:
                     n = int(match.group(2))
                 sql.cursor().execute(match.group(1), params)
-                return [ sql.cursor().fetchone() for i in xrange(n) ]
+                return [ sql.cursor().fetchone() for i in range(n) ]
             return selectall(stmt, params)
         return ret
 
@@ -862,7 +862,7 @@ class SqlAbstraction(object):
                     test_id NUMERIC(2) NOT NULL PRIMARY KEY,
                     test_bit BINARY(32),
                     test_varbit VARBINARY(10000))""" % sql.prefix)
-            val = str(''.join(map(chr, range(0, 256, 8))))
+            val = str(''.join(map(chr, list(range(0, 256, 8)))))
             sql.sql("INSERT INTO %stest_1 (test_id, test_bit, test_varbit)"
                     " VALUES (?, ?, ?)" % sql.prefix,
                     (1, sql.revin(val), sql.binin(val)))
@@ -899,7 +899,7 @@ class SqlAbstraction(object):
                   FROM %stest_1""" % (sql.prefix, sql.prefix))
             v1 = 2099999999999999
             v2 = 1234567890
-            v3 = 12345678901234567890L
+            v3 = 12345678901234567890
             sql.sql("INSERT INTO %stest_1 (test_id, i1, i2, i3)"
                     " VALUES (?, ?, ?, ?)" % sql.prefix,
                     (1, sql.intin(v1), v2, sql.intin(v3)))

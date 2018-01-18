@@ -19,11 +19,11 @@
 
 import os
 import sys
-import DataStore
-import util
+from . import DataStore
+from . import util
 
 def run_upgrades_locked(store, upgrades):
-    for i in xrange(len(upgrades) - 1):
+    for i in range(len(upgrades) - 1):
         vers, func = upgrades[i]
         if store.config['schema_version'] == vers:
             sv = upgrades[i+1][0]
@@ -733,7 +733,7 @@ def insert_null_pubkey(store):
         # set its pubkey_id = 0 without violating constraints.
         old_id = row[0]
         import random  # No need for cryptographic strength here.
-        temp_hash = "".join([chr(random.randint(0, 255)) for x in xrange(20)])
+        temp_hash = "".join([chr(random.randint(0, 255)) for x in range(20)])
         store.sql("INSERT INTO pubkey (pubkey_id, pubkey_hash) VALUES (?, ?)",
                   (DataStore.NULL_PUBKEY_ID, store.binin(temp_hash)))
         store.sql("UPDATE txout SET pubkey_id = ? WHERE pubkey_id = ?",
@@ -875,12 +875,12 @@ def create_firstbits(store):
         store.save_configvar("use_firstbits")
 
     if flag == "true":
-        import firstbits
+        from . import firstbits
         firstbits.create_firstbits(store)
 
 def populate_firstbits(store):
     if store.config['use_firstbits'] == "true":
-        import firstbits
+        from . import firstbits
         firstbits.populate_firstbits(store)
 
 def add_keep_scriptsig(store):
@@ -935,7 +935,7 @@ def drop_policy(store):
         "DROP TABLE policy"]:
         try:
             store.ddl(stmt)
-        except store.dbmodule.DatabaseError, e:
+        except store.dbmodule.DatabaseError as e:
             store.log.warning("Cleanup failed, ignoring: %s", stmt)
 
 def drop_magic(store):
@@ -944,14 +944,14 @@ def drop_magic(store):
         "DROP TABLE magic"]:
         try:
             store.ddl(stmt)
-        except store.dbmodule.DatabaseError, e:
+        except store.dbmodule.DatabaseError as e:
             store.log.warning("Cleanup failed, ignoring: %s", stmt)
 
 def add_chain_decimals(store):
     store.ddl("ALTER TABLE chain ADD chain_decimals NUMERIC(2)")
 
 def insert_chain_novacoin(store):
-    import Chain
+    from . import Chain
     try:
         store.insert_chain(Chain.create("NovaCoin"))
     except Exception:
@@ -1201,5 +1201,5 @@ def upgrade_schema(store):
     store.log.warning("Upgrade complete.")
 
 if __name__ == '__main__':
-    print "Run Abe with --upgrade added to the usual arguments."
+    print("Run Abe with --upgrade added to the usual arguments.")
     sys.exit(2)

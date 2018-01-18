@@ -20,7 +20,7 @@ def looks_like_json(val):
 def parse_argv(argv, conf={}, config_name='config', strict=False):
     arg_dict = conf.copy()
     args = lambda var: arg_dict[var]
-    args.func_dict = arg_dict
+    args.__dict__ = arg_dict
 
     i = 0
     while i < len(argv):
@@ -118,7 +118,7 @@ def _include(seen, filename, conf, config_name, strict):
         rdr = _Reader(fp)
         try:
             entries = read(rdr)
-        except SyntaxError, e:
+        except SyntaxError as e:
             if e.filename is None:
                 e.filename = filename
             if e.lineno is None:
@@ -199,7 +199,7 @@ def read(rdr):
             js = scan_json(rdr)
             try:
                 store(name, parse_json(js), additive)
-            except ValueError, e:
+            except ValueError as e:
                 raise wrap_json_error(rdr, js, e)
             continue
 
@@ -328,7 +328,7 @@ def json_line1_column_bug():
     ret = False
     try:
         parse_json("{:")
-    except ValueError, e:
+    except ValueError as e:
         if "column 1" in e.message:
             ret = True
     finally:

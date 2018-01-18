@@ -19,8 +19,8 @@
 
 import sys
 import getopt
-import DataStore
-import util
+from . import DataStore
+from . import util
 import logging
 
 # List of block statistics to check.
@@ -313,13 +313,11 @@ class AbeVerify:
         ss_created = prev_satoshis * (nTime - prev_nTime)
         b['total_ss'] = prev_total_ss + ss_created
 
-        tx_ids = map(
-            lambda row: row[0],
-            self.store.selectall("""
+        tx_ids = [row[0] for row in self.store.selectall("""
                 SELECT tx_id
                   FROM block_tx
                  WHERE block_id = ?
-              ORDER BY tx_pos ASC""", (block_id,)))
+              ORDER BY tx_pos ASC""", (block_id,))]
         b['ss_destroyed'] = 0
 
         # Modified version of self.store._get_block_ss_destroyed()
@@ -359,7 +357,7 @@ class AbeVerify:
         b['total_satoshis'] = prev_satoshis + b['value_out'] \
                               - b['value_in'] - value_destroyed
 
-        if None in b.values():
+        if None in list(b.values()):
             raise Exception("Stats computation error: block %d (height %d): "
                             "%s" % (block_id, block_height, str(b)))
 
@@ -424,7 +422,7 @@ class AbeVerify:
             # have multiple block candidates
             txin_oblocks.setdefault(txin_id, []).append(oblock_id)
 
-        for txin_id, oblock_ids in txin_oblocks.iteritems():
+        for txin_id, oblock_ids in txin_oblocks.items():
             for oblock_id in oblock_ids:
                 if self.store.is_descended_from(block_id, int(oblock_id)):
                     if check_only:
@@ -506,7 +504,7 @@ def main(argv):
             'repair',
         ])
     except getopt.GetoptError as e:
-        print e.msg, "\n\n", cmdline.usage()
+        print(e.msg, "\n\n", cmdline.usage())
         return 1
 
     chains = None
@@ -538,11 +536,11 @@ def main(argv):
             chk.repair = True
 
     if args:
-        print "Extra argument: %s!\n\n" % args[0], cmdline.usage()
+        print("Extra argument: %s!\n\n" % args[0], cmdline.usage())
         return 1
 
     if True not in (chk.ckmerkle, chk.ckbti, chk.ckstats):
-        print "No checks selected!\n\n", cmdline.usage()
+        print("No checks selected!\n\n", cmdline.usage())
         return 1
 
 
@@ -596,5 +594,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main(sys.argv[1:]))
     except KeyboardInterrupt:
-        print >>sys.stderr, "\rInterrupted!"
+        print("\rInterrupted!", file=sys.stderr)
         sys.exit(1)

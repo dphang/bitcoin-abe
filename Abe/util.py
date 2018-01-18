@@ -20,13 +20,13 @@
 #
 
 import re
-import base58
+from . import base58
 import Crypto.Hash.SHA256 as SHA256
 
 try:
     import Crypto.Hash.RIPEMD as RIPEMD160
 except Exception:
-    import ripemd_via_hashlib as RIPEMD160
+    from . import ripemd_via_hashlib as RIPEMD160
 
 # This function comes from bitcointools, bct-LICENSE.txt.
 def determine_db_dir():
@@ -144,10 +144,10 @@ class JsonrpcMethodNotFound(JsonrpcException):
     pass
 
 def jsonrpc(url, method, *params):
-    import json, urllib
+    import json, urllib.request, urllib.parse, urllib.error
     postdata = json.dumps({"jsonrpc": "2.0",
                            "method": method, "params": params, "id": "x"})
-    respdata = urllib.urlopen(url, postdata).read()
+    respdata = urllib.request.urlopen(url, postdata).read()
     resp = json.loads(respdata)
     if resp.get('error') is not None:
         if resp['error']['code'] == -32601:
@@ -156,7 +156,7 @@ def jsonrpc(url, method, *params):
     return resp['result']
 
 def str_to_ds(s):
-    import BCDataStream
+    from . import BCDataStream
     ds = BCDataStream.BCDataStream()
     ds.write(s)
     return ds
@@ -179,7 +179,7 @@ class CmdLine(object):
 
         args, argv = readconf.parse_argv(self.argv, self.conf, strict=False)
         if argv and argv[0] in ('-h', '--help'):
-            print self.usage()
+            print(self.usage())
             return None, []
 
         logging.basicConfig(

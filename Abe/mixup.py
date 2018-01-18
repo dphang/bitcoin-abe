@@ -21,13 +21,13 @@
 import sys
 import logging
 
-import BCDataStream, util
+from . import BCDataStream, util
 
 def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
     bytes_done = 0
     offsets = []
 
-    for i in xrange(count):
+    for i in range(count):
         if ds.read_cursor + 8 <= len(ds.input):
             offsets.append(ds.read_cursor)
             magic = ds.read_bytes(4)
@@ -38,12 +38,12 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
         raise IOError("End of input after %d blocks" % i)
 
     if seed > 1 and seed <= count:
-        for i in xrange(0, seed * int(count/seed), seed):
+        for i in range(0, seed * int(count/seed), seed):
             offsets[i : i + seed] = offsets[i : i + seed][::-1]
     elif seed == -3:
-        for i in xrange(0, 3 * int(count/3), 3):
+        for i in range(0, 3 * int(count/3), 3):
             offsets[i : i + 3] = offsets[i+1 : i + 3] + [offsets[i]]
-        print offsets
+        print(offsets)
     elif seed:
         offsets = offsets[::-1]  # XXX want random
 
@@ -105,7 +105,7 @@ def mixup_blocks(store, ds, count, datadir_chain = None, seed = None):
                     b = None
                 else:
                     if b['height'] == 0:
-                        b['hashPrev'] = GENESIS_HASH_PREV
+                        b['hashPrev'] = util.GENESIS_HASH_PREV
                     else:
                         b['hashPrev'] = 'dummy'  # Fool adopt_orphans.
                     store.offer_block_to_chains(b, frozenset([chain.id]))

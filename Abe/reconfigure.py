@@ -20,8 +20,8 @@
 import sys
 import logging
 
-import util
-import firstbits
+from . import util
+from . import firstbits
 
 def keep_scriptsig_reconfigure(store, args):
     have = store.keep_scriptsig

@@ -20,7 +20,7 @@
 import sys
 import logging
 
-import util
+from . import util
 
 def commit(store):
     store.commit()
