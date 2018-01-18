@@ -499,7 +499,7 @@ class DataStore(object):
 
             store.chains_by.id[chain.id] = chain
             store.chains_by.name[chain.name] = chain
-            store.chains_by.magic[bytes(chain.magic)] = chain
+            store.chains_by.magic[bytes(chain.magic, 'utf8')] = chain
 
     def get_chain_by_id(store, chain_id):
         return store.chains_by.id[int(chain_id)]
